@@ -1,0 +1,24 @@
+# ESTE REPOSITORIO ES PÚBLICO. Cualquier cosa que se suba la puede leer todo el
+# mundo, así que lo de abajo no se sube nunca, y el motivo va escrito al lado.
+
+# Nada con nombres de alumnado. Eso vive en Plumier XXI y no sale de ahí.
+*.csv
+*.xlsx
+*alumnos*
+*alumnado*
+*matriculas*
+*notas*
+*calificaciones*
+
+# Ningún libro escaneado ni material de editorial: no es mío y no puedo publicarlo.
+*.pdf
+
+# Material del profesor con soluciones o minutados, si algún día cae por aquí.
+*soluciones*
+*guion-profesor*
+*-profesor.*
+
+# Ruido del sistema
+Thumbs.db
+desktop.ini
+.DS_Store

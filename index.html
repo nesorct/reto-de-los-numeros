@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>El Reto de los Números</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --stage:#152a63;
+  --stage-2:#0f1f4c;
+  --card:#ffffff;
+  --ink:#0d1b3e;
+  --ink-soft:#4a5980;
+  --chalk:#f4f7ff;
+  --line:#d7def0;
+  --sun:#ffc93c;
+  --mint:#3ecf9a;
+  --coral:#ff6b6b;
+  --lav:#b08bff;
+  --ok:#1f9d5a;
+  --bad:#d64040;
+  --num:#2743c4;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --stage:#0d1938; --stage-2:#070f24; --card:#182746; --ink:#f0f4ff;
+    --ink-soft:#a9b6d8; --line:#2e3f68; --chalk:#f0f4ff; --num:#9db6ff;
+  }
+}
+:root[data-theme="dark"]{
+  --stage:#0d1938; --stage-2:#070f24; --card:#182746; --ink:#f0f4ff;
+  --ink-soft:#a9b6d8; --line:#2e3f68; --chalk:#f0f4ff; --num:#9db6ff;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{
+  margin:0; height:100%;
+  background:radial-gradient(120% 90% at 50% 0%, var(--stage) 0%, var(--stage-2) 100%);
+  color:var(--chalk);
+  font-family:Lexend, "Segoe UI", system-ui, sans-serif;
+  font-weight:600;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit; cursor:pointer; border:none}
+:focus-visible{outline:4px solid var(--sun); outline-offset:3px}
+@media (prefers-reduced-motion: reduce){*{animation:none!important; transition:none!important}}
+
+.wrap{max-width:1400px; margin:0 auto; padding:clamp(12px,2vw,28px); min-height:100%; display:flex; flex-direction:column; gap:clamp(12px,2vh,22px)}
+
+/* ---------- Portada ---------- */
+#inicio{flex:1; display:flex; flex-direction:column; justify-content:center; gap:clamp(18px,3vh,34px); text-align:center}
+.titulo{font-size:clamp(2.4rem,8vw,5.5rem); font-weight:800; line-height:.95; letter-spacing:-.03em; margin:0}
+.titulo span{display:block; color:var(--sun)}
+.sub{color:#c6d2f2; font-weight:400; font-size:clamp(1rem,2.2vw,1.35rem); max-width:52ch; margin:0 auto; line-height:1.5}
+.bloque{background:rgba(255,255,255,.07); border:2px solid rgba(255,255,255,.14); border-radius:20px; padding:clamp(14px,2.4vw,24px)}
+.bloque h2{margin:0 0 14px; font-size:clamp(1rem,2vw,1.25rem); font-weight:600; color:#c6d2f2}
+.opts{display:flex; flex-wrap:wrap; gap:10px; justify-content:center}
+.chip{background:transparent; color:var(--chalk); border:2px solid rgba(255,255,255,.3); border-radius:999px; padding:.7em 1.4em; font-size:clamp(.95rem,1.8vw,1.15rem); font-weight:600}
+.chip[aria-pressed="true"]{background:var(--sun); color:#14203f; border-color:var(--sun)}
+.jugar{background:var(--mint); color:#06301f; font-size:clamp(1.3rem,3.4vw,2rem); font-weight:800; padding:.6em 1.6em; border-radius:18px; align-self:center}
+.jugar:hover{filter:brightness(1.08)}
+
+/* ---------- Marcador ---------- */
+.marcador{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px}
+.eq{border-radius:16px; padding:.5em .9em .55em; color:#10203f; opacity:.55; border:4px solid transparent}
+.eq.activo{opacity:1; border-color:var(--chalk); transform:translateY(-3px)}
+.eq-fila{display:flex; align-items:baseline; justify-content:space-between; gap:8px}
+.eq b{font-size:clamp(.85rem,1.6vw,1.05rem); font-weight:600}
+.eq i{font-style:normal; font-size:clamp(1.5rem,3.6vw,2.4rem); font-weight:800; font-variant-numeric:tabular-nums}
+.eq small{display:block; font-size:clamp(.7rem,1.3vw,.85rem); font-weight:600; opacity:.75; margin-top:-.15em}
+.nota{margin:.9em 0 0; font-size:clamp(.85rem,1.6vw,1rem); font-weight:400; color:#c6d2f2; line-height:1.45; max-width:62ch}
+.btn.mini{padding:.5em .8em; font-size:clamp(.85rem,1.6vw,1rem)}
+.nivelctl{display:inline-flex; gap:6px}
+.pod small{display:block; font-size:.62em; font-weight:600; opacity:.75; margin-top:.15em}
+
+/* ---------- Pregunta ---------- */
+#juego{flex:1; display:none; flex-direction:column; gap:clamp(10px,1.8vh,18px)}
+.turno{text-align:center; font-size:clamp(1rem,2.4vw,1.4rem); color:#c6d2f2; font-weight:400}
+.turno b{font-weight:800; color:var(--chalk)}
+.carta{background:var(--card); color:var(--ink); border-radius:24px; padding:clamp(16px,3vw,32px); text-align:center; flex:0 0 auto}
+.enunciado{font-size:clamp(1.4rem,4.4vw,2.9rem); font-weight:800; line-height:1.2; margin:0; letter-spacing:-.01em}
+.contexto{font-size:clamp(2.2rem,7vw,4rem); line-height:1; margin-bottom:.2em}
+.visual{margin-top:clamp(10px,2vh,20px)}
+.visual svg{width:100%; height:auto; max-height:26vh; display:block}
+
+.respuestas{display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(8px,1.6vw,16px)}
+@media (max-width:560px){.respuestas{grid-template-columns:1fr}}
+.resp{
+  background:var(--card); color:var(--ink); border-radius:18px; border:4px solid transparent;
+  padding:clamp(12px,2.2vw,22px); font-size:clamp(1.4rem,4vw,2.6rem); font-weight:800;
+  display:flex; align-items:center; gap:.6em; font-variant-numeric:tabular-nums;
+}
+.resp .letra{background:var(--lav); color:#1b0c3a; width:1.5em; height:1.5em; border-radius:12px; display:grid; place-items:center; font-size:.55em; flex:0 0 auto}
+.resp:hover:not(:disabled){border-color:var(--sun)}
+.resp:disabled{cursor:default}
+.resp.bien{background:var(--ok); color:#fff; border-color:#fff}
+.resp.bien .letra{background:rgba(255,255,255,.3); color:#fff}
+.resp.mal{background:var(--bad); color:#fff}
+.resp.mal .letra{background:rgba(255,255,255,.3); color:#fff}
+.resp.gris{opacity:.4}
+
+.barra{display:flex; flex-wrap:wrap; gap:10px; justify-content:center; align-items:center; min-height:3.4em}
+.btn{border-radius:14px; padding:.65em 1.3em; font-size:clamp(.95rem,2vw,1.25rem); font-weight:600; background:rgba(255,255,255,.12); color:var(--chalk); border:2px solid rgba(255,255,255,.25)}
+.btn:hover{background:rgba(255,255,255,.22)}
+.btn.principal{background:var(--sun); color:#14203f; border-color:var(--sun); font-weight:800}
+.btn.rebote{background:var(--coral); color:#fff; border-color:var(--coral); font-weight:800}
+.aviso{font-size:clamp(1rem,2.4vw,1.5rem); font-weight:800; text-align:center; width:100%}
+.aviso.ok{color:var(--mint)} .aviso.no{color:var(--coral)}
+
+.grande{display:block; margin-top:.25em; font-size:clamp(3rem,13vw,7.5rem); line-height:1; color:var(--num); letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.grande.texto{font-size:clamp(1.6rem,5.2vw,3.4rem); line-height:1.15; letter-spacing:0}
+.respuestas.largo .resp{font-size:clamp(1.05rem,2.7vw,1.8rem); line-height:1.25; text-align:left}
+
+.marca{background:var(--sun); color:#14203f; border-radius:.12em; padding:0 .06em}
+.leyenda{display:block; font-size:clamp(.85rem,1.6vw,1.05rem); font-weight:400; color:var(--ink-soft); margin-top:.8em; line-height:1.4}
+.secundario{align-self:center; font-size:clamp(1rem,2.2vw,1.3rem)}
+
+/* ---------- Pizarra ---------- */
+#pizarra{display:none; flex:1; flex-direction:column; gap:clamp(10px,1.8vh,18px)}
+.pz-top{display:flex; flex-wrap:wrap; gap:10px; justify-content:space-between; align-items:center}
+.pz-num{font-size:clamp(2.6rem,11vw,8rem); font-weight:800; line-height:1; color:var(--num); letter-spacing:-.02em; font-variant-numeric:tabular-nums; overflow-wrap:anywhere}
+.pz-num.texto{font-size:clamp(1.4rem,4.4vw,3rem); line-height:1.2; letter-spacing:0; color:var(--ink)}
+.pz-tit{margin:0 0 .3em; color:var(--ink-soft); font-weight:400; font-size:clamp(.9rem,1.8vw,1.1rem)}
+.pz-txt{margin:0; font-size:clamp(1.2rem,3.6vw,2.4rem); font-weight:800; line-height:1.25; overflow-wrap:anywhere}
+.pz-txt + .pz-tit{margin-top:.9em}
+.tabla-scroll{overflow-x:auto}
+.tabla{display:grid; gap:4px; min-width:min(100%,420px)}
+.tg,.th{color:#14203f; font-weight:800; text-align:center}
+.tg{font-size:clamp(.8rem,1.6vw,1.05rem); padding:.35em; border-radius:10px 10px 0 0}
+.th{font-size:clamp(.9rem,2vw,1.3rem); padding:.25em}
+.g-u.tg,.g-u.th{background:var(--sun)} .g-m.tg,.g-m.th{background:var(--mint)} .g-mi.tg,.g-mi.th{background:var(--lav)}
+.td{font-size:clamp(1.4rem,4.5vw,3.2rem); font-weight:800; padding:.2em 0; border-radius:10px; background:var(--card); color:var(--ink); border:3px solid var(--line); font-variant-numeric:tabular-nums}
+.td.g-u{border-color:var(--sun)} .td.g-m{border-color:var(--mint)} .td.g-mi{border-color:var(--lav)}
+.td.vacia{border-style:dashed; opacity:.35}
+.td.sel{background:var(--num); color:#fff}
+.pz-info{margin:.8em 0 0; font-size:clamp(1.05rem,2.6vw,1.6rem); font-weight:600}
+
+/* ---------- Podio ---------- */
+#final{display:none; flex:1; flex-direction:column; justify-content:center; text-align:center; gap:18px}
+.podio{display:flex; flex-direction:column; gap:10px; max-width:640px; margin:0 auto; width:100%}
+.pod{display:flex; align-items:center; justify-content:space-between; gap:12px; border-radius:16px; padding:.7em 1.1em; color:#10203f; font-size:clamp(1.1rem,3vw,1.8rem); font-weight:800}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- PORTADA -->
+  <section id="inicio">
+    <h1 class="titulo">El reto de<span>los números</span></h1>
+    <p class="sub">Por equipos. Responde, suma puntos y, si fallas, la pregunta rebota al equipo siguiente.</p>
+
+    <div class="bloque">
+      <h2>¿Cuántos equipos?</h2>
+      <div class="opts" id="selEquipos"></div>
+    </div>
+
+    <div class="bloque">
+      <h2>¿Qué números trabajamos?</h2>
+      <div class="opts" id="selModo"></div>
+    </div>
+
+    <div class="bloque">
+      <h2>¿Por qué nivel empiezan?</h2>
+      <div class="opts" id="selNivel"></div>
+      <p class="nota" id="notaNivel"></p>
+    </div>
+
+    <div class="bloque">
+      <h2>¿El nivel se mueve durante la partida?</h2>
+      <div class="opts" id="selAdapta"></div>
+      <p class="nota" id="notaAdapta"></p>
+    </div>
+
+    <button class="jugar" id="btnJugar">Empezar a jugar</button>
+    <button class="btn secundario" id="btnPizarra">Modo pizarra: un número al azar para trabajar toda la clase</button>
+  </section>
+
+  <!-- PIZARRA -->
+  <section id="pizarra">
+    <div class="pz-top">
+      <button class="btn" id="pzVolver">Volver al inicio</button>
+      <div class="opts" id="pzTope"></div>
+    </div>
+    <div class="carta"><div class="pz-num" id="pzNumero"></div></div>
+    <div class="barra">
+      <button class="btn principal" id="pzNuevo">Nuevo número</button>
+      <button class="btn" id="pzLetra">Mostrar en letra</button>
+      <button class="btn" id="pzBtnLeer">¿Cómo se lee?</button>
+      <button class="btn" id="pzBtnDesc">Descomposición</button>
+      <button class="btn" id="pzBtnTabla">Tabla de posiciones</button>
+      <button class="btn" id="pzBtnRed">Redondeos</button>
+      <button class="btn" id="pzOir">🔊 Escuchar</button>
+    </div>
+    <div class="carta" id="pzLectura" hidden></div>
+    <div class="carta" id="pzDesc" hidden></div>
+    <div class="carta" id="pzTabla" hidden></div>
+    <div class="carta" id="pzRed" hidden></div>
+  </section>
+
+  <!-- JUEGO -->
+  <section id="juego">
+    <div class="marcador" id="marcador"></div>
+    <p class="turno" id="turno"></p>
+    <div class="carta">
+      <p class="enunciado" id="enunciado"></p>
+      <div class="visual" id="visual"></div>
+    </div>
+    <div class="respuestas" id="respuestas"></div>
+    <div class="barra" id="barra"></div>
+  </section>
+
+  <!-- FINAL -->
+  <section id="final">
+    <h1 class="titulo">Resultado</h1>
+    <div class="podio" id="podio"></div>
+    <button class="jugar" id="btnOtra">Jugar otra partida</button>
+  </section>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+const COLORES = ["#ffc93c","#3ecf9a","#ff6b6b","#b08bff","#5cc8ff","#ff9f5a"];
+const NOMBRES = ["Equipo 1","Equipo 2","Equipo 3","Equipo 4","Equipo 5","Equipo 6"];
+const LETRAS = ["A","B","C","D"];
+
+const estado = {
+  nEquipos: 3,
+  modo: "leer-pos",
+  nivel: 2,        // nivel de salida; a partir de ahí cada equipo lleva el suyo
+  adapta: true,    // sube al segundo acierto seguido, baja a cada fallo
+  equipos: [],
+  turno: 0,
+  pregunta: null,
+  respondida: false,
+  enRebote: false,
+  pistaVisible: false
+};
+
+/* ---------- niveles ----------
+   El nivel manda en el tamaño de los números Y en la estructura de la pregunta.
+   Subir de nivel no es sólo poner más ceros: a partir del 3 entran la jerarquía
+   de operaciones, los paréntesis y las potencias, que es donde de verdad se
+   atascan. Por eso cada generador declara entre qué niveles tiene sentido. */
+const NIVELES = [
+  null,
+  {cif:[2,2], nombre:"Decenas",     hasta:"hasta 99"},
+  {cif:[3,3], nombre:"Centenas",    hasta:"hasta 999"},
+  {cif:[4,4], nombre:"Millares",    hasta:"hasta 9.999"},
+  {cif:[5,6], nombre:"Millares grandes", hasta:"hasta 999.999"},
+  {cif:[7,7], nombre:"Millones",    hasta:"hasta 9.999.999"},
+  {cif:[8,9], nombre:"Millones grandes", hasta:"hasta 999.999.999"}
+];
+const NIVEL_MAX = 6;
+
+/* nivel del equipo al que le toca; antes de empezar, el de la portada */
+function nv(){
+  const e = estado.equipos[estado.turno];
+  return e ? e.nivel : estado.nivel;
+}
+/* lo que vale acertar: a más nivel, más puntos. Si no, al equipo que va
+   arriba le sale a cuenta fallar para que le bajen las preguntas. */
+function valor(nivel){ return 4 + 2*nivel; }
+
+/* ---------- utilidades ---------- */
+const ale = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+const elegir = arr => arr[ale(0,arr.length-1)];
+const barajar = arr => { const c=arr.slice(); for(let i=c.length-1;i>0;i--){const j=ale(0,i); [c[i],c[j]]=[c[j],c[i]];} return c; };
+const signo = n => (n<0 ? "(" + fmt(n) + ")" : fmt(n));
+/* un negativo entre paréntesis, como se escribe en clase */
+const par = n => "(" + fmt(n) + ")";
+
+function crearPregunta(texto, correcta, distractores, extra){
+  const vistos = new Set([String(correcta)]);
+  const opciones = [String(correcta)];
+  for(const d of distractores){
+    const s = String(d);
+    if(!vistos.has(s)){ vistos.add(s); opciones.push(s); }
+    if(opciones.length===4) break;
+  }
+  let intentos = 0;
+  while(typeof correcta==="number" && opciones.length<4 && intentos<60){
+    intentos++;
+    const n = Number(correcta) + ale(-9,9);
+    if(!isNaN(n) && !vistos.has(String(n))){ vistos.add(String(n)); opciones.push(String(n)); }
+  }
+  return Object.assign({
+    texto: texto,
+    opciones: barajar(opciones),
+    correcta: String(correcta),
+    visual: null,
+    pista: null
+  }, extra || {});
+}
+
+/* Pregunta cuyas opciones son números: se pintan con los puntos de millar
+   puestos, que a estos niveles es media pregunta. */
+function pregNum(texto, correcta, distractores, extra){
+  const vistos = new Set([correcta]);
+  const ds = [];
+  for(const d of distractores){
+    if(typeof d==="number" && isFinite(d) && !vistos.has(d)){ vistos.add(d); ds.push(fmt(d)); }
+  }
+  let intentos = 0;
+  const orden = Math.max(1, String(Math.abs(correcta)).length - 1);
+  while(ds.length<3 && intentos<80){
+    intentos++;
+    const c = correcta + ale(-9,9)*Math.pow(10, ale(0, orden));
+    if(c!==correcta && !vistos.has(c)){ vistos.add(c); ds.push(fmt(c)); }
+  }
+  return crearPregunta(texto, fmt(correcta), ds, extra);
+}
+
+/* Errores de verdad, no números al azar: sumar sin llevarse nada y restar
+   siempre la cifra pequeña de la grande. Son los dos fallos que salen en
+   todas las pizarras, y como distractores obligan a hacer la cuenta bien. */
+function sinLlevadas(a,b){
+  const A=String(a).split("").reverse(), B=String(b).split("").reverse();
+  let s=""; for(let i=0;i<Math.max(A.length,B.length);i++) s=((Number(A[i]||0)+Number(B[i]||0))%10)+s;
+  return Number(s);
+}
+function sinLlevar(a,b){
+  const A=String(a).split("").reverse(), B=String(b).split("").reverse();
+  let s=""; for(let i=0;i<A.length;i++) s=Math.abs(Number(A[i]||0)-Number(B[i]||0))+s;
+  return Number(s);
+}
+
+/* un número de k cifras; la probabilidad de cero interior sube con el nivel
+   porque «veinte mil cinco» es justo lo que se escribe mal */
+function numDeCifras(k, pCero){
+  if(k<=1) return ale(2,9);
+  let s = String(ale(1,9));
+  for(let i=1;i<k;i++) s += (Math.random() < (pCero===undefined?0.25:pCero) ? "0" : String(ale(1,9)));
+  return Number(s);
+}
+
+/* ---------- recta numérica en SVG ---------- */
+function recta(min, max, opciones){
+  opciones = opciones || {};
+  const W = 1000, H = opciones.flecha!==undefined ? 210 : 170;
+  const x0 = 45, x1 = W-45;
+  const px = n => x0 + (n-min)/(max-min)*(x1-x0);
+  const y = H-60;
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" font-family="Lexend, sans-serif">';
+  s += '<line x1="'+(x0-25)+'" y1="'+y+'" x2="'+(x1+25)+'" y2="'+y+'" stroke="currentColor" stroke-width="5"/>';
+  s += '<polygon points="'+(x1+25)+','+y+' '+(x1+5)+','+(y-11)+' '+(x1+5)+','+(y+11)+'" fill="currentColor"/>';
+  s += '<polygon points="'+(x0-25)+','+y+' '+(x0-5)+','+(y-11)+' '+(x0-5)+','+(y+11)+'" fill="currentColor"/>';
+  for(let n=min;n<=max;n++){
+    const x = px(n), cero = (n===0);
+    s += '<line x1="'+x+'" y1="'+(y-(cero?22:13))+'" x2="'+x+'" y2="'+(y+(cero?22:13))+'" stroke="currentColor" stroke-width="'+(cero?6:4)+'"/>';
+    const oculto = opciones.ocultar && opciones.ocultar.indexOf(n)>=0;
+    if(!oculto){
+      s += '<text x="'+x+'" y="'+(y+52)+'" text-anchor="middle" font-size="30" font-weight="'+(cero?800:600)+'" fill="currentColor">'+n+'</text>';
+    }
+  }
+  if(opciones.flecha!==undefined){
+    const x = px(opciones.flecha);
+    s += '<polygon points="'+x+','+(y-26)+' '+(x-20)+','+(y-70)+' '+(x+20)+','+(y-70)+'" fill="#ff6b6b"/>';
+    s += '<text x="'+x+'" y="'+(y-80)+'" text-anchor="middle" font-size="34" font-weight="800" fill="#ff6b6b">?</text>';
+  }
+  if(opciones.saltoDesde!==undefined && opciones.saltoHasta!==undefined){
+    const a = px(opciones.saltoDesde), b = px(opciones.saltoHasta);
+    const alto = y-78;
+    s += '<path d="M '+a+' '+(y-26)+' Q '+((a+b)/2)+' '+alto+' '+b+' '+(y-26)+'" fill="none" stroke="#3ecf9a" stroke-width="6"/>';
+    s += '<circle cx="'+a+'" cy="'+(y-26)+'" r="10" fill="#3ecf9a"/>';
+    s += '<polygon points="'+b+','+(y-20)+' '+(b-13)+','+(y-46)+' '+(b+13)+','+(y-46)+'" fill="#3ecf9a"/>';
+  }
+  return s+'</svg>';
+}
+
+/* ---------- generadores: números naturales ----------
+   Los operandos dejan de crecer en 5 cifras: sumar de cabeza ocho cifras no
+   enseña nada. De ahí para arriba lo que sube es la estructura. */
+const OPER = [null,[11,99],[101,999],[1001,9999],[10001,99999],[10001,99999],[10001,99999]];
+function ops(n){ const r=OPER[Math.min(n,6)]; return ale(r[0], r[1]); }
+
+const NATURALES = [
+  {min:1, f:function(n){ const a=ops(n), b=ale(Math.floor(OPER[Math.min(n,6)][0]/2)+3, Math.floor(OPER[Math.min(n,6)][1]/2));
+    return pregNum(fmt(a)+" + "+fmt(b), a+b, [sinLlevadas(a,b), a+b-10, a-b]); }},
+  {min:1, f:function(n){ let a=ops(n), b=ale(Math.floor(OPER[Math.min(n,6)][0]/2)+3, Math.floor(OPER[Math.min(n,6)][1]/2));
+    if(b>=a){ const t=a; a=b; b=t-1; } if(b<2) b=2;
+    return pregNum(fmt(a)+" − "+fmt(b), a-b, [sinLlevar(a,b), a-b+10, a+b]); }},
+  {min:1, max:2, f:function(){ const a=ale(3,12), b=ale(3,9);
+    return pregNum(a+" × "+b, a*b, [a*b+a, a*b-b, a+b]); }},
+  {min:3, f:function(n){ const a=ale(12,99), b=(n>=4?ale(11,49):ale(3,9));
+    return pregNum(fmt(a)+" × "+b, a*b, [a*b+a, a*b-b, sinLlevadas(a*b,0)+ale(1,9)*10]); }},
+  {min:3, f:function(n){ const a=ale(23,987), c=elegir(n>=4?[100,1000,10000]:[10,100]);
+    return pregNum(fmt(a)+" × "+fmt(c), a*c, [a*c*10, Math.floor(a*c/10), a+c]); }},
+  {min:1, max:3, f:function(){ const b=ale(2,9), c=ale(3,12), a=b*c;
+    return pregNum(a+" : "+b, c, [c+1, c-1, b]); }},
+  {min:4, f:function(){ const b=ale(3,9), c=ale(110,899), a=b*c;
+    return pregNum(fmt(a)+" : "+b, c, [c+10, c-10, b*c-b]); }},
+  {min:3, f:function(){ const b=ale(4,9), c=ale(12,60), r=ale(1,b-1), a=b*c+r;
+    return pregNum("Divides "+fmt(a)+" entre "+b+". ¿Cuánto sobra?", r, [b-r, c, r+1],
+      {leyenda:"Lo que sobra siempre es menor que el número entre el que divides."}); }},
+  /* jerarquía: el fallo clásico es ir de izquierda a derecha */
+  {min:3, f:function(){ const a=ale(4,19), b=ale(3,9), c=ale(3,9);
+    return pregNum(a+" + "+b+" × "+c, a+b*c, [(a+b)*c, a*b+c, a+b+c],
+      {leyenda:"Primero se multiplica y después se suma."}); }},
+  {min:3, f:function(){ const b=ale(4,12), c=ale(3,9), a=b*c+ale(5,40);
+    return pregNum(a+" − "+b+" × "+c, a-b*c, [(a-b)*c, a-b-c, a-b+c]); }},
+  {min:4, f:function(){ const a=ale(3,12), b=ale(2,9), c=ale(2,8), d=ale(3,20);
+    return pregNum("("+a+" + "+b+") × "+c+" − "+d, (a+b)*c-d, [a+b*c-d, (a+b)*(c-d), a+b+c-d]); }},
+  {min:4, f:function(){ const a=ale(20,60), b=ale(2,9), c=ale(2,9);
+    return pregNum(a+" − ("+b+" + "+c+")", a-b-c, [a-b+c, a+b+c, a-b*c]); }},
+  /* potencias: el error de siempre es multiplicar por el exponente */
+  {min:3, f:function(n){ const a=ale(2,n>=4?12:9), e=elegir(n>=5?[2,3,4]:[2,3]);
+    return pregNum(a+"<sup>"+e+"</sup>", Math.pow(a,e), [a*e, Math.pow(a,e)-a, Math.pow(a,e-1)],
+      {leyenda:"Un exponente no dice «por cuánto multiplico», dice «cuántas veces se repite»."}); }},
+  {min:4, f:function(){ const r=ale(4,20), a=r*r;
+    return pregNum("√"+a, r, [a/2, r+1, r*2]); }},
+  /* comparar y ordenar, que a estas alturas ya no es mirar la primera cifra */
+  {min:1, f:function(n){ const base=numDeCifras(NIVELES[Math.min(n,6)].cif[0], 0.2), ns=[base];
+    while(ns.length<4){ const c=base + ale(-9,9)*Math.pow(10, ale(0, String(base).length-2));
+      if(c>0 && ns.indexOf(c)<0) ns.push(c); }
+    const mayor = Math.max.apply(null, ns);
+    const q = crearPregunta("¿Cuál es el número mayor?", fmt(mayor), []);
+    q.opciones = barajar(ns.map(fmt)); return q; }},
+  {min:3, f:function(n){ const base=numDeCifras(NIVELES[Math.min(n,6)].cif[0], 0.2), ns=[base];
+    while(ns.length<4){ const c=base + ale(-9,9)*Math.pow(10, ale(0, String(base).length-2));
+      if(c>0 && ns.indexOf(c)<0) ns.push(c); }
+    const orden = ns.slice().sort((a,b)=>b-a);
+    const q = crearPregunta("Ordenados de mayor a menor, ¿cuál va el segundo?", fmt(orden[1]), []);
+    q.opciones = barajar(ns.map(fmt)); return q; }},
+  /* problemas: uno de un paso hasta el nivel 3, de dos pasos a partir del 3 */
+  {min:1, max:3, f:function(){ const p=ale(18,32), s=ale(4,12), b=ale(2,9);
+    return pregNum("En el autobús van "+p+" personas. Suben "+s+" y bajan "+b+". ¿Cuántas van ahora?",
+      p+s-b, [p+s+b, p-s+b, p+s], {contexto:"🚌"}); }},
+  {min:1, max:3, f:function(){ const c=ale(3,8), u=ale(4,15);
+    return pregNum("Compras "+c+" cuadernos de "+u+" € cada uno. ¿Cuánto pagas?",
+      c*u, [c+u, c*u+u, c*u-c], {contexto:"📓", sufijo:" €"}); }},
+  {min:3, f:function(){ const c=ale(4,9), u=ale(6,19), pago=Math.ceil((c*u+ale(3,25))/10)*10;
+    return pregNum("Compras "+c+" libretas de "+u+" € cada una y pagas con "+pago+" €. ¿Cuánto te devuelven?",
+      pago-c*u, [c*u, pago-u, pago-c*u+u], {contexto:"💶", sufijo:" €"}); }},
+  {min:3, f:function(){ const cajas=ale(7,24), pq=ale(6,12), rotas=ale(3,15);
+    return pregNum("Llegan "+cajas+" cajas con "+pq+" botellas cada una y "+rotas+" vienen rotas. ¿Cuántas quedan buenas?",
+      cajas*pq-rotas, [cajas*pq+rotas, (cajas-rotas)*pq, cajas+pq-rotas], {contexto:"📦"}); }},
+  {min:4, f:function(){ const dia=ale(120,480), dias=ale(12,28), gasto=ale(400,2000);
+    return pregNum("Una fábrica hace "+fmt(dia)+" piezas al día durante "+dias+" días y desecha "+fmt(gasto)+". ¿Cuántas vende?",
+      dia*dias-gasto, [dia*dias+gasto, dia*dias, dia*(dias-1)-gasto], {contexto:"🏭"}); }},
+  /* estimar: se responde sin hacer la cuenta, y eso hay que entrenarlo aparte */
+  {min:3, f:function(n){ const a=ale(3,9)*1000+ale(800,999), b=ale(2,8)*1000+ale(1,199);
+    const q = pregNum("Sin hacer la cuenta exacta: "+fmt(a)+" + "+fmt(b)+" está cerca de…",
+      Math.round((a+b)/1000)*1000, [Math.round((a+b)/1000)*1000+10000, Math.round((a+b)/1000)*1000-5000, Math.round((a-b)/1000)*1000],
+      {leyenda:"Redondea cada número a los millares y súmalos de cabeza."});
+    return q; }}
+];
+
+/* ---------- generadores: números enteros ----------
+   Aquí el nivel no es el tamaño: es cuántos signos hay que encadenar. Del 1 al
+   2 se anda por la recta; del 3 entran los paréntesis y la regla de los
+   signos, y del 5 las potencias de base negativa. */
+const ENTEROS = [
+  {min:1, max:3, f:function(){ const n = ale(-6,6);
+    const q = pregNum("¿Qué número señala la flecha?", n, [n+1, n-1, -n===n? n+2 : -n]);
+    q.visual = recta(-8,8,{flecha:n, ocultar:[n]});
+    return q; }},
+  {min:1, max:3, f:function(){ const n = elegir([-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9]);
+    return pregNum("¿Cuál es el opuesto de "+fmt(n)+"?", -n, [n, -n+1, -n-1]); }},
+  {min:1, f:function(n){ const m = n<=2 ? 9 : (n<=4 ? 99 : 999);
+    let a=ale(-m,m), b=ale(-m,m); if(a===b) b=a+2;
+    const q = crearPregunta("¿Qué signo falta?   "+fmt(a)+"  ___  "+fmt(b), a>b?">":"<", []);
+    q.opciones = barajar(["<",">","="]);
+    if(n<=2) q.visual = recta(-10,10,{});
+    return q; }},
+  {min:1, max:3, f:function(){ const a=ale(-9,-1), b=ale(1,9);
+    const q = pregNum(a+" + "+b, a+b, [a-b, Math.abs(a)+b, -(a+b)]);
+    q.visual = recta(-12,12,{saltoDesde:a, saltoHasta:a+b});
+    return q; }},
+  {min:1, f:function(n){ const m = n<=2 ? 8 : (n<=4 ? 60 : 400);
+    const a=ale(-m,-1), b=ale(1,m);
+    return pregNum(fmt(a)+" − "+signo(b), a-b, [a+b, b-a, -(a-b)]); }},
+  {min:1, f:function(n){ const m = n<=2 ? 9 : (n<=4 ? 60 : 400);
+    const a=ale(1,m), b=ale(2,m);
+    return pregNum(a+" − "+signo(-b), a+b, [a-b, -a-b, b-a]); }},
+  {min:1, max:3, f:function(){ const n = elegir([-9,-8,-7,-6,-5,-4,-3,-2,-1]);
+    return pregNum("¿Cuál es el valor absoluto de "+fmt(n)+"?  |"+fmt(n)+"|", -n, [n, 0, -n+1]); }},
+  {min:1, f:function(n){ const m = n<=2 ? 9 : (n<=4 ? 99 : 999);
+    const ns=[]; while(ns.length<4){ const c=ale(-m,m)||1; if(ns.indexOf(c)<0) ns.push(c); }
+    const menor = Math.min.apply(null, ns);
+    const q = crearPregunta("¿Cuál es el número menor?", fmt(menor), []);
+    q.opciones = barajar(ns.map(fmt));
+    return q; }},
+  /* tres sumandos: hay que agrupar, no se puede ir a ojo */
+  {min:3, f:function(){ const a=ale(-15,-2), b=ale(2,18), c=ale(-14,-2);
+    return pregNum(fmt(a)+" + "+signo(b)+" + "+signo(c), a+b+c,
+      [a+b-c, -(a+b+c), a-b+c]); }},
+  {min:3, f:function(){ const a=ale(-12,12)||3, b=ale(-9,-1), c=ale(2,9);
+    return pregNum(fmt(a)+" − ("+fmt(b)+" + "+c+")", a-(b+c), [a-b+c, a+b+c, a-b-c],
+      {leyenda:"Primero lo del paréntesis; el signo de fuera afecta a todo lo de dentro."}); }},
+  {min:4, f:function(){ const a=ale(2,14), b=ale(-12,-2), c=ale(2,9);
+    return pregNum(a+" − ("+fmt(b)+" − "+c+")", a-(b-c), [a-b-c, a+b-c, a-b+c]); }},
+  /* regla de los signos */
+  {min:3, f:function(){ const a=elegir([-9,-8,-7,-6,-5,-4,-3,-2]), b=ale(2,9);
+    return pregNum(par(a)+" × "+b, a*b, [-a*b, a+b, a-b],
+      {leyenda:"Signos distintos, resultado negativo."}); }},
+  {min:4, f:function(){ const a=elegir([-9,-8,-7,-6,-5,-4,-3,-2]), b=elegir([-9,-8,-7,-6,-5,-4,-3,-2]);
+    return pregNum(par(a)+" × "+par(b), a*b, [-(a*b), a+b, a-b],
+      {leyenda:"Dos signos iguales dan positivo."}); }},
+  {min:4, f:function(){ const b=elegir([-9,-8,-6,-5,-4,-3,-2]), c=ale(2,9), a=b*c;
+    return pregNum(par(a)+" : "+par(b)+"", c, [-c, a-b, b]); }},
+  {min:4, f:function(){ const a=ale(2,9), b=elegir([-9,-7,-6,-5,-4,-3,-2]), c=ale(2,8);
+    return pregNum(a+" + "+par(b)+" × "+c, a+b*c, [(a+b)*c, a-b*c, a+b+c],
+      {leyenda:"Se multiplica antes de sumar, también con signos."}); }},
+  {min:5, f:function(){ const a=elegir([-5,-4,-3,-2]), e=elegir([2,3]);
+    return pregNum(par(a)+"<sup>"+e+"</sup>", Math.pow(a,e), [-Math.pow(a,e), a*e, Math.abs(a*e)],
+      {leyenda:"Exponente par, positivo; exponente impar, negativo."}); }},
+  /* contextos: los mismos de siempre, con números más grandes al subir */
+  {min:1, f:function(n){ const e=n<=2?1:(n<=4?3:4); const t=ale(-6,3)*e, b=ale(2,8)*e;
+    return pregNum("El termómetro marca "+fmt(t)+" °C y la temperatura baja "+b+" grados. ¿Qué marcará?",
+      t-b, [t+b, b-t, t-b+2], {contexto:"🌡️", sufijo:" °C"}); }},
+  {min:1, max:3, f:function(){ const p=ale(-3,-1), s=ale(2,7);
+    return pregNum("Estás en el aparcamiento, planta "+fmt(p)+". Subes "+s+" plantas. ¿En qué planta estás?",
+      p+s, [p-s, s-p, p+s+1], {contexto:"🛗"}); }},
+  {min:1, f:function(n){ const e=n<=2?1:(n<=4?7:40); const d=ale(4,15)*e;
+    /* siempre se devuelve menos de lo que se debe: si no, «¿cuánto debes
+       ahora?» no tiene respuesta con sentido */
+    const p=ale(2, Math.max(2, d-e));
+    return pregNum("Debes "+fmt(d)+" € y devuelves "+fmt(p)+" €. ¿Cuánto debes ahora?",
+      -(d-p), [d-p, -(d+p), d+p], {contexto:"💶", sufijo:" €"}); }},
+  {min:1, f:function(n){ const e=n<=2?1:(n<=4?5:20); const prof=ale(-12,-4)*e, sube=ale(3,9)*e;
+    return pregNum("Un buceador está a "+fmt(prof)+" m y sube "+fmt(sube)+" m. ¿A qué profundidad está?",
+      prof+sube, [prof-sube, sube-prof, prof+sube-1], {contexto:"🤿", sufijo:" m"}); }},
+  /* dos saltos con signo: el problema entero de verdad */
+  {min:3, f:function(){ const ini=ale(-8,-2), sube=ale(4,14), baja=ale(3,12);
+    return pregNum("Un ascensor sale de la planta "+fmt(ini)+", sube "+sube+" plantas y después baja "+baja+". ¿Dónde acaba?",
+      ini+sube-baja, [ini+sube+baja, ini-sube+baja, sube-baja], {contexto:"🛗"}); }},
+  {min:4, f:function(){ const n1=ale(-800,-100), n2=ale(100,900);
+    return pregNum("Un templo se construyó en el año "+fmt(n1)+" y se derribó en el año "+fmt(n2)+". ¿Cuántos años estuvo en pie?",
+      n2-n1, [n2+n1, -n1-n2, n2-n1-1],
+      {contexto:"🏛️", sufijo:" años", leyenda:"Los años antes de Cristo son los negativos. La cuenta es la distancia entre los dos en la recta."}); }}
+];
+
+/* ---------- leer y escribir números ---------- */
+const UNI = ["","uno","dos","tres","cuatro","cinco","seis","siete","ocho","nueve","diez","once","doce","trece","catorce","quince","dieciséis","diecisiete","dieciocho","diecinueve","veinte","veintiuno","veintidós","veintitrés","veinticuatro","veinticinco","veintiséis","veintisiete","veintiocho","veintinueve"];
+const DEC = ["","","","treinta","cuarenta","cincuenta","sesenta","setenta","ochenta","noventa"];
+const CEN = ["","ciento","doscientos","trescientos","cuatrocientos","quinientos","seiscientos","setecientos","ochocientos","novecientos"];
+
+function decenas(r){ if(r<30) return UNI[r]; const d=Math.floor(r/10), u=r%10; return DEC[d]+(u?" y "+UNI[u]:""); }
+function cientos(n){ if(n===100) return "cien"; const c=Math.floor(n/100), r=n%100; let s=c?CEN[c]:""; if(r) s+=(s?" ":"")+decenas(r); return s; }
+function apocope(t){ return t.replace(/veintiuno$/,"veintiún").replace(/uno$/,"un"); }
+function palabras(n){
+  if(n===0) return "cero";
+  if(n<0) return "menos "+palabras(-n);
+  const mill=Math.floor(n/1000000), resto6=n%1000000; let s="";
+  if(mill>0) s = mill===1 ? "un millón" : apocope(cientos(mill))+" millones";
+  const miles=Math.floor(resto6/1000), resto=resto6%1000;
+  if(miles>0) s += (s?" ":"") + (miles===1 ? "mil" : apocope(cientos(miles))+" mil");
+  if(resto>0) s += (s?" ":"")+cientos(resto);
+  return s;
+}
+function fmt(n){ const a=Math.abs(n); let s=String(a); if(a>=10000) s=s.replace(/\B(?=(\d{3})+(?!\d))/g,"."); return (n<0?"−":"")+s; }
+function sfmt(n){ return (n>0?"+":"")+fmt(n); }
+
+function numLectura(nivel){
+  nivel = Math.min(nivel || nv(), NIVEL_MAX);
+  const c = NIVELES[nivel].cif, k = ale(c[0], c[1]);
+  if(k<=2) return Math.random()<0.12 ? 100 : ale(11,99);
+  /* cuanto más alto el nivel, más ceros interiores: ahí está la dificultad
+     de verdad de leer y escribir, no en que el número sea largo */
+  return numDeCifras(k, 0.15 + nivel*0.05);
+}
+/* leer negativos por encima de los millares no se hace en clase */
+function numNeg(){ return Math.random()<0.3 ? -ale(2,9) : -numLectura(Math.min(nv(),3)); }
+
+/* distractores basados en errores reales: cifras cambiadas, ceros de más o de menos, "dos mil cinco" → 20005 */
+function erroresTipicos(n){
+  const s=String(n), L=s.length, tipicos=[];
+  for(let i=0;i<L-1;i++){ if(s[i]!==s[i+1]){ const t=s.slice(0,i)+s[i+1]+s[i]+s.slice(i+2); if(t[0]!=="0") tipicos.push(Number(t)); } }
+  if(s.indexOf("0")>0){ const k=s.lastIndexOf("0"); tipicos.push(Number(s.slice(0,k)+s.slice(k+1))); }
+  { const k=ale(1,L); tipicos.push(Number(s.slice(0,k)+"0"+s.slice(k))); }
+  if(n>=1000 && n%1000>0) tipicos.push(Number(String(Math.floor(n/1000))+"000"+String(n%1000)));
+  if(n>=100 && n<1000 && n%100>0) tipicos.push(Number(String(Math.floor(n/100))+"00"+String(n%100)));
+  const lista = barajar(tipicos).concat([n+10, n-10, n+1]);
+  const vistos=new Set([n]), out=[];
+  for(const c of lista){ if(c>0 && c<1000000000 && !vistos.has(c)){ vistos.add(c); out.push(c); } if(out.length===3) break; }
+  return out;
+}
+
+/* delante de un nombre no se dice "uno" ("treinta y un euros"): en los contextos se evitan esos números */
+function sinUno(n){ return (n%10===1 && n%100!==11) ? n+1 : n; }
+
+/* cada contexto tiene su tope de cifras porque una montaña de nueve cifras no
+   existe, y un número que no puede ser deja de enseñar a leerlo */
+const CONTEXTOS_POS = [
+  {e:"🏟️", t:"En el estadio caben {n} espectadores", cif:5},
+  {e:"🏔️", t:"La montaña mide {n} metros", cif:4},
+  {e:"🚲", t:"La bici cuesta {n} euros", cif:4},
+  {e:"📚", t:"La biblioteca tiene {n} libros", cif:6},
+  {e:"🏫", t:"En el instituto hay {n} alumnos", cif:3},
+  /* todos los nombres en masculino: palabras() no concuerda en femenino
+     («doscientas mil personas») y no merece la pena que lo haga */
+  {e:"🌍", t:"En ese país viven {n} habitantes", cif:8},
+  {e:"💾", t:"El archivo ocupa {n} bytes", cif:9},
+  {e:"🚗", t:"El coche ha hecho {n} kilómetros", cif:6}
+];
+/* nivel más alto cuyo número cabe en el contexto */
+function nivelParaCifras(cifMax){
+  for(let i=NIVEL_MAX;i>=1;i--) if(NIVELES[i].cif[0]<=cifMax) return i;
+  return 1;
+}
+function contextoPos(){
+  const c = elegir(CONTEXTOS_POS.filter(x=>x.cif >= NIVELES[Math.min(nv(),NIVEL_MAX)].cif[0] - 2) );
+  return c || elegir(CONTEXTOS_POS);
+}
+/* «dos millones de habitantes», pero «dos millones quinientos mil habitantes»:
+   el «de» sólo va cuando detrás del millón no queda nada más que decir */
+function rellena(plantilla, letras){
+  return plantilla.indexOf("{n} ")>=0
+    ? plantilla.replace("{n} ", letras + (/mill(ón|ones)$/.test(letras) ? " de " : " "))
+    : plantilla.replace("{n}", letras);
+}
+const CONTEXTOS_SIGNO = [
+  {e:"🌡️", t:"Hace {n} grados bajo cero", s:-1, max:15},
+  {e:"🌡️", t:"Hace {n} grados sobre cero", s:1, max:35},
+  {e:"🅿️", t:"He aparcado en el sótano {n}", s:-1, max:4},
+  {e:"🏢", t:"Vivo en la planta {n}", s:1, max:9},
+  {e:"💶", t:"Debo {n} euros", s:-1, max:50},
+  {e:"💶", t:"Tengo {n} euros ahorrados", s:1, max:50},
+  {e:"🤿", t:"El buceador está a {n} metros bajo el nivel del mar", s:-1, max:30},
+  {e:"🕊️", t:"La gaviota vuela a {n} metros sobre el nivel del mar", s:1, max:60},
+  {e:"🎮", t:"En el juego pierdo {n} puntos", s:-1, max:20},
+  {e:"🎮", t:"En el juego gano {n} puntos", s:1, max:20}
+];
+
+const LEER_POS = [
+  {min:1, f:function(){ const n=numLectura();
+    return crearPregunta("¿Cómo se lee este número?", palabras(n), erroresTipicos(n).map(palabras), {grande:fmt(n), decir:palabras(n)}); }},
+  {min:1, f:function(){ const n=numLectura();
+    return crearPregunta("¿Cómo se escribe con cifras?", fmt(n), erroresTipicos(n).map(fmt), {grande:palabras(n), grandeTexto:true, audio:palabras(n)}); }},
+  {min:1, f:function(){ const c=contextoPos(), n=sinUno(numLectura(Math.min(nv(), nivelParaCifras(c.cif))));
+    return crearPregunta(rellena(c.t,palabras(n))+". ¿Cómo se escribe ese número con cifras?", fmt(n), erroresTipicos(n).map(fmt), {contexto:c.e, audio:palabras(n)}); }},
+  /* de aquí para abajo, lo que hace que el nivel deje de quedarse corto */
+  {min:2, f:function(){ /* dos números iguales salvo una cifra: hay que mirarlas todas */
+    const a=numLectura(); let b=a, guarda=0;
+    while(b===a && guarda++<40){
+      const s=String(a).split(""), i=ale(0,s.length-1), d=ale(0,9);
+      s[i]=String(d===Number(s[i]) ? (d+1)%10 : d); if(s[0]==="0") s[0]="1";
+      b=Number(s.join(""));
+    }
+    if(b===a) b=a+ale(1,9);
+    const q=crearPregunta("¿Qué signo falta?   "+fmt(a)+"  ___  "+fmt(b), a>b?">":"<", []);
+    q.opciones=barajar(["<",">","="]);
+    q.leyenda="Con el mismo número de cifras se comparan de izquierda a derecha, cifra a cifra.";
+    return q; }},
+  {min:2, f:function(){ /* anterior de un número redondo: el que cruza los ceros */
+    const nivel=Math.min(nv(),NIVEL_MAX), k=ale(NIVELES[nivel].cif[0], NIVELES[nivel].cif[1]);
+    const n = ale(1,9)*Math.pow(10,k-1) + (Math.random()<0.6 ? 0 : ale(1,9)*Math.pow(10,k-2));
+    return pregNum("¿Qué número va justo antes de "+fmt(n)+"?", n-1, [n+1, n-10, n-Math.pow(10,k-1)],
+      {leyenda:"Cuidado al restar uno cuando el número acaba en ceros."}); }},
+  {min:3, f:function(){ const nivel=Math.min(nv(),NIVEL_MAX), k=NIVELES[nivel].cif[0];
+    /* la misma pregunta que el modo «Redondear», con sus distractores */
+    const p = lugarPara(k), n = numRedondear(k, p);
+    return pregNum("Redondea "+fmt(n)+" a "+LUGAR_R[p], redondeo(n,p), erroresRedondeo(n,p),
+      {leyenda:LEY_R}); }},
+  {min:3, f:function(){ const nivel=Math.min(nv(),NIVEL_MAX), k=NIVELES[nivel].cif[0];
+    /* el salto crece con el número: sumar 10 a siete cifras no es nivel 5 */
+    const n=numDeCifras(k,0.2), salto=Math.pow(10, ale(Math.max(1,k-4), Math.max(1,k-2))), sube=Math.random()<0.5;
+    return pregNum("¿Qué número es "+fmt(salto)+" "+(sube?"más":"menos")+" que "+fmt(n)+"?",
+      sube? n+salto : n-salto, [sube? n-salto : n+salto, n+salto*10, n+1]); }},
+  {min:2, f:function(){ /* entre qué dos números está: obliga a situarlo, no a leerlo */
+    const nivel=Math.min(nv(),NIVEL_MAX), k=NIVELES[nivel].cif[0];
+    const base=Math.pow(10,k-1), d=ale(1,8), n=d*base+ale(1,base-1);
+    const bien=fmt(d*base)+" y "+fmt((d+1)*base);
+    return crearPregunta("¿Entre qué dos números está "+fmt(n)+"?", bien,
+      [fmt((d-1)*base)+" y "+fmt(d*base), fmt((d+1)*base)+" y "+fmt((d+2)*base), fmt(d*base*10)+" y "+fmt((d+1)*base*10)]); }}
+];
+
+const LEER_NEG = [
+  {min:1, f:function(){ const n=numNeg(), a=-n;
+    const dis=[palabras(a), "más "+palabras(a)].concat(erroresTipicos(a).map(x=>palabras(-x)));
+    return crearPregunta("¿Cómo se lee este número?", palabras(n), dis, {grande:fmt(n), decir:palabras(n)}); }},
+  {min:1, f:function(){ const n=numNeg(), a=-n;
+    const dis=[fmt(a), a+"−"].concat(erroresTipicos(a).map(x=>fmt(-x)));
+    return crearPregunta("¿Cómo se escribe con cifras?", fmt(n), dis, {grande:palabras(n), grandeTexto:true, audio:palabras(n)}); }},
+  {min:1, max:3, f:function(){ const n=ale(-7,-1);
+    const q=crearPregunta("¿Cómo se lee el número que señala la flecha?", palabras(n), [palabras(-n), palabras(n-1), palabras(n===-1?-2:n+1)], {decir:palabras(n)});
+    q.visual=recta(-8,8,{flecha:n, ocultar:[n]}); q.siempreVisual=true; return q; }},
+  {min:1, f:function(){ const c=elegir(CONTEXTOS_SIGNO), m=sinUno(ale(2,c.max)), v=m*c.s;
+    return crearPregunta(rellena(c.t,palabras(m))+". ¿Con qué número lo escribimos?", sfmt(v), [sfmt(-v), sfmt(v+10*c.s)], {contexto:c.e}); }},
+  {min:1, max:2, f:function(){ const c=elegir(CONTEXTOS_SIGNO), m=sinUno(ale(2,c.max));
+    const q=crearPregunta(rellena(c.t,palabras(m))+". ¿Es un número positivo o negativo?", c.s>0?"Positivo (+)":"Negativo (−)", [c.s>0?"Negativo (−)":"Positivo (+)"], {contexto:c.e});
+    q.opciones=["Positivo (+)","Negativo (−)"]; return q; }},
+  {min:3, f:function(){ const x=ale(-99,-11); let y=ale(-99,-11); if(y===x) y=x-7;
+    const q=crearPregunta("¿Qué signo falta?   "+fmt(x)+"  ___  "+fmt(y), x>y?">":"<", []);
+    q.opciones=barajar(["<",">","="]);
+    q.leyenda="Entre dos negativos es mayor el que está más cerca del cero.";
+    return q; }},
+  {min:3, f:function(){ const ns=[]; while(ns.length<4){ const c=ale(-60,60); if(c!==0 && ns.indexOf(c)<0) ns.push(c); }
+    const orden=ns.slice().sort((a,b)=>a-b);
+    const q=crearPregunta("Ordenados de menor a mayor, ¿cuál va el tercero?", fmt(orden[2]), []);
+    q.opciones=barajar(ns.map(fmt)); return q; }}
+];
+
+/* ---------- descomposición ---------- */
+const POS = [
+  {a:"U", n:"unidades"},{a:"D", n:"decenas"},{a:"C", n:"centenas"},
+  {a:"UM", n:"unidades de millar"},{a:"DM", n:"decenas de millar"},{a:"CM", n:"centenas de millar"},
+  {a:"UMi", n:"unidades de millón"},{a:"DMi", n:"decenas de millón"},{a:"CMi", n:"centenas de millón"}
+];
+function cifrasDe(n){ return String(n).split("").reverse().map(Number); }
+function descAditiva(n){ const c=cifrasDe(n), t=[]; for(let p=c.length-1;p>=0;p--) if(c[p]) t.push(fmt(c[p]*Math.pow(10,p))); return t.join(" + "); }
+function descPosicional(n){ const c=cifrasDe(n), t=[]; for(let p=c.length-1;p>=0;p--) if(c[p]) t.push(c[p]+" "+POS[p].a); return t.join(" + "); }
+function leyendaPara(n){ return POS.slice(0,String(n).length).map(x=>x.a+" = "+x.n).join(", "); }
+function fmtMarcado(n,p){ const s=fmt(n); let k=-1, out=""; for(let i=s.length-1;i>=0;i--){ const ch=s[i]; if(/\d/.test(ch)){ k++; out=(k===p?'<mark class="marca">'+ch+'</mark>':ch)+out; } else out=ch+out; } return out; }
+function numDesc(){ let n, g=0; do{ n=numLectura(); }while(String(n).replace(/0/g,"").length<2 && g++<40); return n; }
+
+const DESCOMP = [
+  {min:1, f:function(){ const n=numDesc();
+    return crearPregunta("¿Cómo se descompone este número?", descAditiva(n), erroresTipicos(n).map(descAditiva), {grande:fmt(n)}); }},
+  {min:1, f:function(){ const n=numDesc();
+    return crearPregunta("¿Qué número es?", fmt(n), erroresTipicos(n).map(fmt), {grande:descAditiva(n), grandeTexto:true}); }},
+  {min:1, f:function(){ const n=numDesc();
+    return crearPregunta("¿Cuál es su descomposición en unidades?", descPosicional(n), erroresTipicos(n).map(descPosicional), {grande:fmt(n), leyenda:leyendaPara(n*10)}); }},
+  {min:1, f:function(){ const n=numDesc();
+    return crearPregunta("¿Qué número es?", fmt(n), erroresTipicos(n).map(fmt), {grande:descPosicional(n), grandeTexto:true, leyenda:leyendaPara(n)}); }},
+  {min:1, f:function(){ const n=numDesc(), c=cifrasDe(n), p=ale(0,c.length-1), d=c[p];
+    const vecinos=[]; [p+1,p-1,p+2,p-2].forEach(k=>{ if(k>=0 && k<c.length) vecinos.push(c[k]); });
+    const vistos=new Set([d]), ops=[String(d)];
+    for(const o of barajar(vecinos).concat(barajar([0,1,2,3,4,5,6,7,8,9]))){ if(!vistos.has(o)){ vistos.add(o); ops.push(String(o)); } if(ops.length===4) break; }
+    const q=crearPregunta("¿Qué cifra está en las "+POS[p].n+"?", String(d), [], {grande:fmt(n)});
+    q.opciones=barajar(ops); return q; }},
+  {min:1, f:function(){ const n=numDesc(), c=cifrasDe(n), ps=[]; c.forEach((d,i)=>{ if(d) ps.push(i); });
+    const p=elegir(ps), d=c[p];
+    const dis=[String(d), fmt(d*Math.pow(10,p+1)), p>0 ? fmt(d*Math.pow(10,p-1)) : fmt(d*100)];
+    return crearPregunta("¿Cuánto vale la cifra marcada?", fmt(d*Math.pow(10,p)), dis, {grande:fmtMarcado(n,p)}); }},
+  /* «cuántas centenas hay EN TOTAL» no es «qué cifra está en las centenas»:
+     es la pregunta que separa al que entiende la posición del que la recita */
+  {min:3, f:function(){ const n=numDesc(), c=cifrasDe(n), p=ale(2, c.length-1);
+    const total=Math.floor(n/Math.pow(10,p));
+    return pregNum("¿Cuántas "+POS[p].n+" hay en total en este número?", total,
+      [c[p], total*10, Math.floor(n/Math.pow(10,p-1))],
+      {grande:fmt(n), leyenda:"En total, no sólo la cifra que ocupa ese lugar."}); }},
+  {min:3, f:function(){ const n=numDesc(), c=cifrasDe(n), p=ale(1,c.length-1), d=c[p];
+    let nuevo=ale(1,9); if(nuevo===d) nuevo=(d+3)%10 || 7;
+    const res = n + (nuevo-d)*Math.pow(10,p);
+    return pregNum("En "+fmt(n)+" cambias la cifra de las "+POS[p].n+" por un "+nuevo+". ¿Qué número queda?",
+      res, [n+(nuevo-d), Number(String(n).replace(String(d), String(nuevo))), n+nuevo]); }},
+  {min:4, f:function(){ const c=[]; const k=ale(4,6);
+    for(let i=0;i<k;i++) c.push(Math.random()<0.25?0:ale(1,9));
+    if(c[k-1]===0) c[k-1]=ale(1,9);
+    let n=0; c.forEach((d,i)=>{ n += d*Math.pow(10,i); });
+    const trozos=[]; for(let p=k-1;p>=0;p--) if(c[p]) trozos.push(c[p]+" "+POS[p].a);
+    const desordenado = barajar(trozos).join(" + ");
+    return pregNum("Las piezas están desordenadas. ¿Qué número forman?", n,
+      erroresTipicos(n), {grande:desordenado, grandeTexto:true, leyenda:leyendaPara(n)}); }},
+  {min:4, f:function(){ const n=numDesc(), k=String(n).length, p=ale(1,k-1);
+    const res=n*Math.pow(10,p);
+    return pregNum("¿Cuánto es "+fmt(n)+" × "+fmt(Math.pow(10,p))+"?", res,
+      [n+p, n*Math.pow(10,p-1), n*Math.pow(10,p+1)],
+      {leyenda:"Multiplicar por la unidad seguida de ceros corre todas las cifras de sitio."}); }}
+];
+
+/* ---------- redondear ----------
+   Es lo que más cuesta, y hasta ahora salía poco: una pregunta escondida en
+   «leer y escribir», y sólo desde el nivel 3. Aquí tiene su modo propio y
+   entra en todos los niveles: en el 1 se redondean dos cifras a las decenas,
+   con la recta delante.
+   Los distractores son los fallos de verdad, no números al azar: redondear
+   hacia el lado que no es, mirar un lugar de más o de menos, y «quitar las
+   cifras» (4.738 → 47), que es cortar, no redondear. */
+const LUGAR_R = ["las unidades","las decenas","las centenas","los millares",
+  "las decenas de millar","las centenas de millar","los millones",
+  "las decenas de millón","las centenas de millón"];
+const LEY_R = "Mira la cifra de la derecha del lugar: de 5 para arriba sube, de 4 para abajo se queda. Y detrás, todo ceros.";
+function redondeo(n,p){ const b=Math.pow(10,p); return Math.round(n/b)*b; }
+function erroresRedondeo(n,p){
+  const b=Math.pow(10,p), abajo=Math.floor(n/b)*b, r=redondeo(n,p);
+  const lista=[r===abajo ? abajo+b : abajo,          /* hacia el otro lado */
+          Math.round(n/b),                       /* quitar las cifras */
+          redondeo(n,p+1), p>1 ? redondeo(n,p-1) : abajo+2*b,  /* otro lugar */
+          /* de repuesto, por si los de arriba coinciden (con 997 casi todos
+             dan 1000): sin esto pregNum rellena al azar y salían negativos */
+          r+b, r-b, r+2*b];
+  return lista.filter(x=>x>0 && x!==r);
+}
+/* el lugar al que se redondea: nunca el de delante del todo (no queda nada
+   que redondear) y, en números largos, de los cuatro más altos, que redondear
+   ocho cifras a las decenas no enseña nada nuevo */
+function lugarPara(k){ return ale(Math.max(1,k-4), Math.max(1,k-1)); }
+/* la mitad de las veces la cifra que decide es un 4 o un 5: la frontera es
+   donde se equivocan */
+function numRedondear(k,p){
+  const s=String(numDeCifras(k,0.15)).split("");
+  if(Math.random()<0.5) s[k-p]=String(elegir([4,5]));
+  return Number(s.join(""));
+}
+function cifrasNivel(n){ const c=NIVELES[Math.min(n,NIVEL_MAX)].cif; return ale(c[0],c[1]); }
+
+const CONTEXTOS_R = [
+  {e:"🏟️", t:"Al partido fueron {n} espectadores. El periódico lo redondea a {l}. ¿Qué número pone?", cif:5, mn:3},
+  {e:"🚲", t:"La bici cuesta {n} €. Redondeando a {l}, ¿cuánto cuesta más o menos?", cif:4, suf:" €"},
+  {e:"🏙️", t:"Una ciudad tiene {n} habitantes. Redondeado a {l}, ¿cuántos son?", cif:7, mn:5},
+  {e:"🚗", t:"El coche lleva {n} km recorridos. Redondea a {l}.", cif:6, mn:3, suf:" km"},
+  {e:"📚", t:"La biblioteca tiene {n} libros. Redondeado a {l}, ¿cuántos son?", cif:5, mn:3},
+  {e:"🏔️", t:"La montaña mide {n} metros. Redondea su altura a {l}.", cif:4, mn:4, suf:" m"},
+  {e:"🌍", t:"En ese país viven {n} habitantes. En la noticia lo redondean a {l}. ¿Qué número sale?", cif:9, mn:7},
+  {e:"🏫", t:"En el instituto hay {n} alumnos. Redondeado a {l}, ¿cuántos son?", cif:3, mn:3},
+  {e:"📖", t:"El libro tiene {n} páginas. Redondea a {l}.", cif:3},
+  {e:"🍬", t:"En el bote hay {n} caramelos. Redondeado a {l}, ¿cuántos hay más o menos?", cif:3},
+  {e:"🍎", t:"La cooperativa ha recogido {n} kg de fruta. Redondea a {l}.", cif:6, mn:4, suf:" kg"}
+];
+
+const REDONDEO = [
+  /* el básico, el que sale más: va dos veces en el banco */
+  {min:1, f:function(n){ const k=cifrasNivel(n), p=lugarPara(k), m=numRedondear(k,p);
+    return pregNum("Redondea a "+LUGAR_R[p], redondeo(m,p), erroresRedondeo(m,p),
+      {grande:fmt(m), leyenda:LEY_R}); }},
+  {min:1, f:function(n){ const k=cifrasNivel(n), p=lugarPara(k), m=numRedondear(k,p);
+    return pregNum("Redondea a "+LUGAR_R[p], redondeo(m,p), erroresRedondeo(m,p),
+      {grande:fmt(m), leyenda:LEY_R}); }},
+  /* en la recta: se ve a qué decena está más cerca. Sin el 5, que está justo
+     en medio y en la recta no se ve hacia dónde va */
+  {min:1, max:2, f:function(n){ const a = n<=1 ? ale(1,9)*10 : ale(10,99)*10;
+    let u=ale(1,9); if(u===5) u=elegir([4,6]);
+    const m=a+u, r=redondeo(m,1);
+    const q=pregNum("La flecha señala el "+m+". ¿A qué decena está más cerca?", r,
+      [r===a ? a+10 : a, a-10, a+20], {leyenda:"Cuenta los saltos hasta cada decena: gana la que está más cerca."});
+    q.visual=recta(a, a+10, {flecha:m}); q.siempreVisual=true; return q; }},
+  /* el 5 justo en medio: la regla dice que sube */
+  {min:1, max:3, f:function(n){ const k=cifrasNivel(n), p=Math.max(1,k-(n>=3?2:1));
+    const s=String(numDeCifras(k,0.1)).split(""); s[k-p]="5";
+    for(let i=k-p+1;i<k;i++) s[i]="0";
+    const m=Number(s.join(""));
+    return pregNum("Redondea a "+LUGAR_R[p]+". ¡Ojo, que es un 5!", redondeo(m,p), erroresRedondeo(m,p),
+      {grande:fmt(m), leyenda:"El 5 está justo en medio. Por acuerdo, con el 5 se sube."}); }},
+  /* el 9 que arrastra: 4.962 a las centenas no es 4.1000, es 5.000 */
+  {min:3, f:function(n){ const k=cifrasNivel(n), p=ale(1, Math.max(1,k-2));
+    const b=Math.pow(10,p), delante=k-p-1;
+    let A = delante>0 ? numDeCifras(delante,0.1) : 0;
+    if(A && Math.random()<0.5) A = A - A%10 + 9;
+    const m=(A*10+9)*b + ale(5*b/10, b-1), r=redondeo(m,p), abajo=Math.floor(m/b)*b;
+    /* abajo: no subir; el segundo: poner el 0 sin llevarse nada */
+    return pregNum("Redondea a "+LUGAR_R[p], r, [abajo, Math.floor(m/(10*b))*10*b, r+b, r-b],
+      {grande:fmt(m), leyenda:"Si la cifra que sube es un 9, se convierte en 10: pone un 0 y le pasa 1 a la de su izquierda."}); }},
+  /* con contexto: redondear es lo que hace un periódico, no un ejercicio */
+  {min:1, f:function(n){ const kn=cifrasNivel(n);
+    /* que el número quepa en el contexto por arriba y por abajo; si ninguno
+       llega, uno que no se quede corto y se recortan las cifras */
+    const vale=CONTEXTOS_R.filter(c=>(c.mn||1)<=kn && c.cif>=kn),
+          c=vale.length ? elegir(vale) : elegir(CONTEXTOS_R.filter(c=>(c.mn||1)<=kn));
+    const k=Math.min(kn,c.cif), p=lugarPara(k), m=numRedondear(k,p);
+    return pregNum(c.t.replace("{n}",fmt(m)).replace("{l}",LUGAR_R[p]), redondeo(m,p), erroresRedondeo(m,p),
+      {contexto:c.e, sufijo:c.suf||"", leyenda:LEY_R}); }},
+  /* al revés: hay que redondear los cuatro y ver cuál da */
+  {min:2, f:function(n){ const k=cifrasNivel(n), p=lugarPara(k), b=Math.pow(10,p), h=b/2;
+    const R=ale(Math.max(2,Math.pow(10,k-p-1)), Math.pow(10,k-p)-1)*b;
+    let bien=R+ale(-h,h-1); if(bien===R) bien=R+ale(1,h-1);
+    /* tres que redondean a otra cosa, distintos entre sí y del bueno: por
+       arriba se van a R+b y por abajo a R−b */
+    const dis=[]; let guarda=0;
+    while(dis.length<3 && guarda++<200){
+      const c = Math.random()<0.5 ? R+ale(h,b+h-1) : R-h-ale(1,b-1);
+      if(c>0 && c!==bien && dis.indexOf(c)<0 && redondeo(c,p)!==R) dis.push(c);
+    }
+    return crearPregunta("¿Cuál de estos números, redondeado a "+LUGAR_R[p]+", da "+fmt(R)+"?", fmt(bien), dis.map(fmt),
+      {leyenda:"Redondea los cuatro y quédate con el que da justo ese número."}); }},
+  /* estimar: redondear para hacer la cuenta de cabeza */
+  {min:2, f:function(n){ const k=Math.min(cifrasNivel(n),6), p=Math.max(1,k-1), b=Math.pow(10,p);
+    const a=numRedondear(k,p), c=numRedondear(k,p), bien=redondeo(a,p)+redondeo(c,p);
+    return pregNum("Redondea los dos a "+LUGAR_R[p]+" y súmalos de cabeza: "+fmt(a)+" + "+fmt(c)+" ≈ ?", bien,
+      [a+c, Math.floor(a/b)*b+Math.floor(c/b)*b, bien+b, bien-b, bien+2*b, bien+3*b].filter(x=>x>0),
+      {leyenda:"Primero se redondea cada uno. La suma exacta no es lo que se pide."}); }}
+];
+
+/* ---------- pizarra ---------- */
+const pz ={ tope:100000000, n:0, enLetra:false };
+function numAzar(max){
+  if(Math.random()<0.04) return max;
+  const dmax=String(max).length-1;
+  const cifras = Math.random()<0.6 ? dmax : ale(Math.max(2,dmax-2), dmax);
+  let s=String(ale(1,9));
+  for(let i=1;i<cifras;i++) s += (Math.random()<0.3 ? "0" : String(ale(1,9)));
+  return Number(s);
+}
+function tablaPosiciones(n){
+  const c=cifrasDe(n), grupos=Math.ceil(c.length/3), cols=grupos*3;
+  const nombres=["Unidades","Millares","Millones"], cls=["g-u","g-m","g-mi"];
+  let h='<div class="tabla-scroll"><div class="tabla" style="grid-template-columns:repeat('+cols+',1fr)">';
+  for(let g=grupos-1; g>=0; g--) h+='<div class="tg '+cls[g]+'" style="grid-column:span 3">'+nombres[g]+'</div>';
+  for(let p=cols-1; p>=0; p--) h+='<div class="th '+cls[Math.floor(p/3)]+'">'+["U","D","C"][p%3]+'</div>';
+  for(let p=cols-1; p>=0; p--){
+    h += p<c.length ? '<button class="td '+cls[Math.floor(p/3)]+'" data-p="'+p+'">'+c[p]+'</button>' : '<div class="td vacia"></div>';
+  }
+  return h+'</div></div><p class="pz-info" id="pzInfo">Toca una cifra para ver cuánto vale.</p>';
+}
+function pzPintar(){
+  const el=$("pzNumero");
+  el.classList.toggle("texto", pz.enLetra);
+  el.textContent = pz.enLetra ? palabras(pz.n) : fmt(pz.n);
+  $("pzLetra").textContent = pz.enLetra ? "Mostrar en cifras" : "Mostrar en letra";
+  $("pzBtnLeer").textContent = pz.enLetra ? "¿Cómo se escribe?" : "¿Cómo se lee?";
+  $("pzLectura").innerHTML = pz.enLetra
+    ? '<p class="pz-tit">Con cifras se escribe</p><p class="pz-txt">'+fmt(pz.n)+'</p>'
+    : '<p class="pz-tit">Se lee</p><p class="pz-txt">'+palabras(pz.n)+'</p>';
+  $("pzDesc").innerHTML = '<p class="pz-tit">Suma de valores</p><p class="pz-txt">'+descAditiva(pz.n)+'</p>'+
+    '<p class="pz-tit">En unidades</p><p class="pz-txt">'+descPosicional(pz.n)+'</p>'+
+    '<span class="leyenda">'+leyendaPara(pz.n)+'</span>';
+  $("pzTabla").innerHTML = tablaPosiciones(pz.n);
+  /* el mismo número redondeado a cada lugar: se ve que cuanto más alto el
+     lugar, más ceros y más lejos del número de verdad */
+  const k=String(pz.n).length;
+  let filas="";
+  for(let p=1;p<k;p++) filas += '<p class="pz-txt" style="margin:.15em 0">A '+LUGAR_R[p]+' → <b>'+fmt(redondeo(pz.n,p))+'</b></p>';
+  $("pzRed").innerHTML = '<p class="pz-tit">Redondeado</p>'+(filas || '<p class="pz-txt">Con una cifra no hay nada que redondear.</p>')+
+    '<span class="leyenda">'+LEY_R+'</span>';
+  Array.prototype.forEach.call($("pzTabla").querySelectorAll("button.td"), b=>{
+    b.addEventListener("click", ()=>{
+      Array.prototype.forEach.call($("pzTabla").querySelectorAll(".td.sel"), x=>x.classList.remove("sel"));
+      b.classList.add("sel");
+      const p=Number(b.dataset.p), d=Number(b.textContent);
+      $("pzInfo").textContent = d===0
+        ? "El 0 está en las "+POS[p].n+": ahí no hay ninguna."
+        : "El "+d+" está en las "+POS[p].n+" y vale "+fmt(d*Math.pow(10,p))+".";
+    });
+  });
+}
+function pzChips(){
+  const topes=[[1000,"Hasta 1.000"],[1000000,"Hasta 1.000.000"],[100000000,"Hasta 100.000.000"]];
+  $("pzTope").innerHTML = topes.map(t=>'<button class="chip" data-t="'+t[0]+'" aria-pressed="'+(t[0]===pz.tope)+'">'+t[1]+'</button>').join("");
+  Array.prototype.forEach.call($("pzTope").children, b=>{
+    b.addEventListener("click", ()=>{ pz.tope=Number(b.dataset.t); pzChips(); pzNuevo(); });
+  });
+}
+function pzNuevo(){
+  pz.n=numAzar(pz.tope); pz.enLetra=false;
+  ["pzLectura","pzDesc","pzTabla","pzRed"].forEach(id=>{ $(id).hidden=true; });
+  pzPintar();
+}
+function pzAlternar(id){ $(id).hidden = !$(id).hidden; }
+
+const BANCOS = {"leer-pos":LEER_POS, "leer-neg":LEER_NEG, "descomp":DESCOMP, "redondear":REDONDEO, "naturales":NATURALES, "enteros":ENTEROS};
+function generar(){
+  const nivel = nv();
+  const todo = estado.modo==="mixto" ? [].concat(LEER_POS,LEER_NEG,DESCOMP,REDONDEO,NATURALES,ENTEROS) : BANCOS[estado.modo];
+  /* sólo los generadores que tienen sentido a este nivel; si al subir se
+     quedara sin ninguno, se tira del banco entero antes que romperse */
+  let aptos = todo.filter(g => nivel >= (g.min||1) && nivel <= (g.max||NIVEL_MAX));
+  if(!aptos.length) aptos = todo.filter(g => nivel >= (g.min||1));
+  if(!aptos.length) aptos = todo;
+  const q = elegir(aptos).f(nivel);
+  q.nivel = nivel;
+  return q;
+}
+
+function hablar(t){
+  try{
+    if(!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang="es-ES"; u.rate=0.85;
+    const voces = speechSynthesis.getVoices();
+    const v = voces.find(v=>/^es[-_]ES/i.test(v.lang)) || voces.find(v=>/^es/i.test(v.lang));
+    if(v) u.voice=v;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+
+/* ---------- pintar ---------- */
+const $ = id => document.getElementById(id);
+
+/* lo que vale la pregunta que hay puesta ahora mismo */
+function puntosAhora(){
+  const n = (estado.pregunta && estado.pregunta.nivel) || nv();
+  return estado.enRebote ? Math.ceil(valor(n)/2) : valor(n);
+}
+
+function pintarMarcador(){
+  $("marcador").innerHTML = estado.equipos.map((e,i)=>
+    '<div class="eq'+(i===estado.turno?' activo':'')+'" style="background:'+e.color+'">'+
+    '<div class="eq-fila"><b>'+e.nombre+'</b><i>'+e.puntos+'</i></div>'+
+    '<small>Nivel '+e.nivel+' · '+NIVELES[e.nivel].nombre+'</small></div>'
+  ).join("");
+  const e = estado.equipos[estado.turno];
+  $("turno").innerHTML = (estado.enRebote? "Rebote: responde " : "Es el turno de ") +
+    '<b style="color:'+e.color+'">'+e.nombre+'</b>' +
+    ' · <span style="opacity:.8">'+puntosAhora()+' puntos</span>';
+}
+
+/* Sube al segundo acierto seguido y baja a cada fallo: subir cuesta dos y
+   bajar uno, para que nadie se quede atascado arriba pasándolo mal. */
+function ajustarNivel(equipo, acierto){
+  if(!estado.adapta) return 0;
+  if(acierto){
+    equipo.racha++;
+    if(equipo.racha>=2 && equipo.nivel<NIVEL_MAX){ equipo.nivel++; equipo.racha=0; return 1; }
+  } else {
+    equipo.racha = 0;
+    if(equipo.nivel>1){ equipo.nivel--; return -1; }
+  }
+  return 0;
+}
+
+/* corrección a mano: el automatismo acierta casi siempre, pero tú ves cosas
+   que el marcador no ve */
+function moverNivel(d){
+  const e = estado.equipos[estado.turno];
+  const nuevo = Math.min(NIVEL_MAX, Math.max(1, e.nivel+d));
+  if(nuevo===e.nivel) return;
+  /* en modo fijo el nivel es de la clase entera, no de un equipo */
+  const mueve = estado.adapta ? [e] : estado.equipos;
+  mueve.forEach(x=>{ x.nivel = Math.min(NIVEL_MAX, Math.max(1, x.nivel+d)); x.racha = 0; });
+  if(!estado.adapta) estado.nivel = e.nivel;
+  if(!estado.respondida && !estado.enRebote){
+    estado.pregunta = generar();
+    pintarPregunta();
+  }
+  pintarMarcador();
+}
+
+function pintarPregunta(){
+  const q = estado.pregunta;
+  $("enunciado").innerHTML = (q.contexto ? '<span class="contexto" style="display:block">'+q.contexto+'</span>' : '') + q.texto +
+    (q.grande ? '<span class="grande'+(q.grandeTexto?' texto':'')+'">'+q.grande+'</span>' : '') +
+    (q.leyenda ? '<span class="leyenda">'+q.leyenda+'</span>' : '');
+  $("visual").innerHTML = (q.visual && (estado.pistaVisible || q.siempreVisual)) ? q.visual : "";
+  $("respuestas").classList.toggle("largo", q.opciones.some(o=>o.length>9));
+  $("respuestas").innerHTML = q.opciones.map((op,i)=>
+    '<button class="resp" data-op="'+i+'"><span class="letra">'+LETRAS[i]+'</span><span>'+op+(q.sufijo&&op!=="="&&op!=="<"&&op!==">"?q.sufijo:"")+'</span></button>'
+  ).join("");
+  Array.prototype.forEach.call(document.querySelectorAll(".resp"), b=>{
+    b.addEventListener("click", ()=>responder(Number(b.dataset.op), b));
+  });
+  pintarBarra();
+}
+
+function pintarBarra(){
+  const q = estado.pregunta;
+  let html = "";
+  if(!estado.respondida && q.audio){
+    html += '<button class="btn" id="btnAudio">🔊 Escuchar</button>';
+  }
+  if(!estado.respondida && q.visual && !q.siempreVisual){
+    html += '<button class="btn" id="btnPista">'+(estado.pistaVisible?"Ocultar recta":"Ver la recta numérica")+'</button>';
+  }
+  if(!estado.respondida){
+    html += '<button class="btn" id="btnSaltar">Saltar pregunta</button>';
+    html += '<span class="nivelctl"><button class="btn mini" id="btnBaja" title="Bajar el nivel de este equipo">− nivel</button>'+
+            '<button class="btn mini" id="btnSube" title="Subir el nivel de este equipo">+ nivel</button></span>';
+  }
+  html += '<button class="btn" id="btnFin">Terminar partida</button>';
+  $("barra").innerHTML = html;
+  if($("btnPista")) $("btnPista").addEventListener("click", ()=>{ estado.pistaVisible=!estado.pistaVisible; $("visual").innerHTML = estado.pistaVisible? q.visual : ""; pintarBarra(); });
+  if($("btnAudio")) $("btnAudio").addEventListener("click", ()=>hablar(q.audio));
+  if($("btnSaltar")) $("btnSaltar").addEventListener("click", siguiente);
+  if($("btnBaja")) $("btnBaja").addEventListener("click", ()=>moverNivel(-1));
+  if($("btnSube")) $("btnSube").addEventListener("click", ()=>moverNivel(1));
+  $("btnFin").addEventListener("click", terminar);
+}
+
+function responder(i, boton){
+  if(estado.respondida) return;
+  const q = estado.pregunta;
+  const acierto = q.opciones[i] === q.correcta;
+  const puntos = puntosAhora();
+  const equipo = estado.equipos[estado.turno];
+
+  if(acierto){
+    estado.respondida = true;
+    boton.classList.add("bien");
+    equipo.puntos += puntos;
+    /* en el rebote se contesta a una pregunta que no era la suya: suma
+       puntos, pero no le mueve el nivel */
+    const salto = estado.enRebote ? 0 : ajustarNivel(equipo, true);
+    pintarMarcador();
+    cerrar('<span class="aviso ok">¡Correcto! +'+puntos+' puntos'+
+      (salto>0 ? ' · '+equipo.nombre+' sube al nivel '+equipo.nivel : '')+'</span>');
+  } else {
+    boton.classList.add("mal");
+    boton.disabled = true;
+    if(!estado.enRebote && estado.equipos.length>1){
+      const salto = ajustarNivel(equipo, false);
+      estado.enRebote = true;
+      estado.turno = (estado.turno+1) % estado.equipos.length;
+      if(q.visual){ estado.pistaVisible = true; $("visual").innerHTML = q.visual; }
+      pintarMarcador();
+      $("barra").innerHTML = '<span class="aviso no">Fallo. Rebota al siguiente equipo por '+puntosAhora()+' puntos.'+
+        (salto<0 ? ' '+equipo.nombre+' baja al nivel '+equipo.nivel+'.' : '')+'</span>';
+      setTimeout(pintarBarra, 1400);
+    } else {
+      if(!estado.enRebote) ajustarNivel(equipo, false);
+      estado.respondida = true;
+      pintarMarcador();
+      cerrar('<span class="aviso no">No era esa. La respuesta correcta se queda marcada.</span>');
+    }
+  }
+}
+
+function cerrar(mensaje){
+  const q = estado.pregunta;
+  Array.prototype.forEach.call(document.querySelectorAll(".resp"), b=>{
+    b.disabled = true;
+    const val = q.opciones[Number(b.dataset.op)];
+    if(val === q.correcta) b.classList.add("bien");
+    else if(!b.classList.contains("mal")) b.classList.add("gris");
+  });
+  if(q.visual){ estado.pistaVisible = true; $("visual").innerHTML = q.visual; }
+  const leer = q.decir || q.audio;
+  $("barra").innerHTML = mensaje + (leer ? '<button class="btn" id="btnOir">🔊 Escuchar la respuesta</button>' : '') +
+    '<button class="btn principal" id="btnSig">Siguiente pregunta</button><button class="btn" id="btnFin">Terminar partida</button>';
+  if(leer) $("btnOir").addEventListener("click", ()=>hablar(leer));
+  $("btnSig").addEventListener("click", siguiente);
+  $("btnFin").addEventListener("click", terminar);
+}
+
+function siguiente(){
+  /* el turno avanza siempre, también después de un rebote: si no, el equipo
+     que responde el rebote se queda dos turnos seguidos */
+  estado.turno = (estado.turno+1) % estado.equipos.length;
+  estado.enRebote = false;
+  estado.respondida = false;
+  estado.pistaVisible = false;
+  estado.pregunta = generar();
+  pintarMarcador();
+  pintarPregunta();
+}
+
+function terminar(){
+  $("juego").style.display="none";
+  $("final").style.display="flex";
+  const orden = estado.equipos.slice().sort((a,b)=>b.puntos-a.puntos);
+  $("podio").innerHTML = orden.map((e,i)=>
+    '<div class="pod" style="background:'+e.color+'">'+
+    '<span>'+(i===0?"🏆 ":"")+e.nombre+'<small>Acabó en el nivel '+e.nivel+' · '+NIVELES[e.nivel].nombre+'</small></span>'+
+    '<span>'+e.puntos+' puntos</span></div>'
+  ).join("");
+}
+
+/* ---------- portada ---------- */
+function pintarPortada(){
+  $("selEquipos").innerHTML = [2,3,4,5,6].map(n=>
+    '<button class="chip" data-n="'+n+'" aria-pressed="'+(n===estado.nEquipos)+'">'+n+' equipos</button>'
+  ).join("");
+  Array.prototype.forEach.call($("selEquipos").children, b=>{
+    b.addEventListener("click", ()=>{ estado.nEquipos = Number(b.dataset.n); pintarPortada(); });
+  });
+  const modos = [["leer-pos","Leer y escribir positivos"],["leer-neg","Leer y escribir negativos"],["descomp","Descomposición"],["redondear","Redondear"],["naturales","Operar con naturales"],["enteros","Operar con enteros"],["mixto","Mezcla de todo"]];
+  $("selModo").innerHTML = modos.map(m=>
+    '<button class="chip" data-m="'+m[0]+'" aria-pressed="'+(m[0]===estado.modo)+'">'+m[1]+'</button>'
+  ).join("");
+  Array.prototype.forEach.call($("selModo").children, b=>{
+    b.addEventListener("click", ()=>{ estado.modo = b.dataset.m; pintarPortada(); });
+  });
+  $("selNivel").innerHTML = NIVELES.slice(1).map((nv_,i)=>
+    '<button class="chip" data-n="'+(i+1)+'" aria-pressed="'+((i+1)===estado.nivel)+'">'+(i+1)+'. '+nv_.nombre+'</button>'
+  ).join("");
+  Array.prototype.forEach.call($("selNivel").children, b=>{
+    b.addEventListener("click", ()=>{ estado.nivel = Number(b.dataset.n); pintarPortada(); });
+  });
+  $("notaNivel").textContent = NIVELES[estado.nivel].nombre + ", " + NIVELES[estado.nivel].hasta +
+    ". Del nivel 3 en adelante entran también la jerarquía de operaciones, los paréntesis y las potencias.";
+
+  const adapta = [[true,"Sube y baja solo"],[false,"Fijo para todos"]];
+  $("selAdapta").innerHTML = adapta.map(a=>
+    '<button class="chip" data-a="'+a[0]+'" aria-pressed="'+(a[0]===estado.adapta)+'">'+a[1]+'</button>'
+  ).join("");
+  Array.prototype.forEach.call($("selAdapta").children, b=>{
+    b.addEventListener("click", ()=>{ estado.adapta = (b.dataset.a==="true"); pintarPortada(); });
+  });
+  $("notaAdapta").textContent = estado.adapta
+    ? "Cada equipo lleva su propio nivel: sube al segundo acierto seguido y baja a cada fallo. Acertar en un nivel alto vale más puntos, así que nadie gana por quedarse abajo."
+    : "Todos los equipos juegan siempre en el mismo nivel. Durante la partida puedes moverlo a mano con «+ nivel» y «− nivel».";
+}
+
+$("btnJugar").addEventListener("click", ()=>{
+  estado.equipos = [];
+  for(let i=0;i<estado.nEquipos;i++) estado.equipos.push({nombre:NOMBRES[i], color:COLORES[i], puntos:0, nivel:estado.nivel, racha:0});
+  estado.turno = 0; estado.enRebote=false; estado.respondida=false; estado.pistaVisible=false;
+  estado.pregunta = generar();
+  $("inicio").style.display="none";
+  $("final").style.display="none";
+  $("juego").style.display="flex";
+  pintarMarcador(); pintarPregunta();
+});
+
+$("btnPizarra").addEventListener("click", ()=>{
+  $("inicio").style.display="none"; $("pizarra").style.display="flex";
+  pzChips(); pzNuevo();
+});
+$("pzVolver").addEventListener("click", ()=>{ $("pizarra").style.display="none"; $("inicio").style.display="flex"; });
+$("pzNuevo").addEventListener("click", pzNuevo);
+$("pzLetra").addEventListener("click", ()=>{ pz.enLetra=!pz.enLetra; const abiertos=["pzLectura","pzDesc","pzTabla","pzRed"].filter(id=>!$(id).hidden); pzPintar(); abiertos.forEach(id=>{ $(id).hidden=false; }); });
+$("pzBtnLeer").addEventListener("click", ()=>pzAlternar("pzLectura"));
+$("pzBtnDesc").addEventListener("click", ()=>pzAlternar("pzDesc"));
+$("pzBtnTabla").addEventListener("click", ()=>pzAlternar("pzTabla"));
+$("pzBtnRed").addEventListener("click", ()=>pzAlternar("pzRed"));
+$("pzOir").addEventListener("click", ()=>hablar(palabras(pz.n)));
+
+$("btnOtra").addEventListener("click", ()=>{
+  $("final").style.display="none";
+  $("inicio").style.display="flex";
+  pintarPortada();
+});
+
+/* teclado: A-D o 1-4 para responder, Enter para seguir */
+document.addEventListener("keydown", e=>{
+  if($("pizarra").style.display==="flex" && (e.key==="ArrowRight" || e.key==="PageDown")){ pzNuevo(); e.preventDefault(); return; }
+  if($("juego").style.display==="none") return;
+  const k = e.key.toLowerCase();
+  const idx = ["a","b","c","d"].indexOf(k) >= 0 ? ["a","b","c","d"].indexOf(k) : (["1","2","3","4"].indexOf(k));
+  if(idx>=0){
+    const b = document.querySelector('.resp[data-op="'+idx+'"]');
+    if(b && !b.disabled){ b.click(); e.preventDefault(); }
+  } else if(e.key==="Enter"){
+    if($("btnSig")){ $("btnSig").click(); e.preventDefault(); }
+  }
+});
+
+pintarPortada();
+})();
+</script>
+</body>
+</html>
