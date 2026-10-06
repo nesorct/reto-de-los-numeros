@@ -1046,8 +1046,13 @@ function pintarBarra(){
     html += '<span class="nivelctl"><button class="btn mini" id="btnBaja" title="Bajar el nivel de este equipo">− nivel</button>'+
             '<button class="btn mini" id="btnSube" title="Subir el nivel de este equipo">+ nivel</button></span>';
   }
+  /* red de seguridad: con la pregunta ya contestada, siempre se puede seguir */
+  if(estado.respondida){
+    html += '<button class="btn principal" id="btnSig">Siguiente pregunta</button>';
+  }
   html += '<button class="btn" id="btnFin">Terminar partida</button>';
   $("barra").innerHTML = html;
+  if($("btnSig")) $("btnSig").addEventListener("click", siguiente);
   if($("btnPista")) $("btnPista").addEventListener("click", ()=>{ estado.pistaVisible=!estado.pistaVisible; $("visual").innerHTML = estado.pistaVisible? q.visual : ""; pintarBarra(); });
   if($("btnAudio")) $("btnAudio").addEventListener("click", ()=>hablar(q.audio));
   if($("btnSaltar")) $("btnSaltar").addEventListener("click", siguiente);
@@ -1084,7 +1089,9 @@ function responder(i, boton){
       pintarMarcador();
       $("barra").innerHTML = '<span class="aviso no">Fallo. Rebota al siguiente equipo por '+puntosAhora()+' puntos.'+
         (salto<0 ? ' '+equipo.nombre+' baja al nivel '+equipo.nivel+'.' : '')+'</span>';
-      setTimeout(pintarBarra, 1400);
+      /* se guarda para poder cancelarlo: si el rebote se contesta antes de
+         1,4 s, este repintado llegaba tarde y borraba «Siguiente pregunta» */
+      estado.timerBarra = setTimeout(pintarBarra, 1400);
     } else {
       if(!estado.enRebote) ajustarNivel(equipo, false);
       estado.respondida = true;
@@ -1095,6 +1102,7 @@ function responder(i, boton){
 }
 
 function cerrar(mensaje){
+  clearTimeout(estado.timerBarra);
   const q = estado.pregunta;
   Array.prototype.forEach.call(document.querySelectorAll(".resp"), b=>{
     b.disabled = true;
