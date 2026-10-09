@@ -59,3 +59,13 @@ saca otro número.
 
 Los equipos se llaman «Equipo 1», «Equipo 2»… No se escribe ningún nombre, no hay servidor ni
 cuenta y no se guarda nada: al recargar, la partida empieza de cero.
+
+## Historial
+
+- **2026-09-30.** Publicado en GitHub Pages.
+- **2026-10-06.** **La partida ya no se queda sin «Siguiente pregunta».** Tras un fallo, el rebote programaba
+  repintar la barra a los 1,4 s; si el equipo del rebote contestaba antes (un clic rápido o las teclas A-D), ese
+  repintado llegaba tarde y dejaba **solo «Terminar partida»**. Ahora el temporizador se cancela al cerrar la
+  pregunta y, con la pregunta contestada, la barra pone siempre «Siguiente pregunta». Probado en el navegador:
+  la versión anterior se atascaba en la primera ronda y la nueva jugó **300 rondas seguidas** (227 rebotes) sin
+  pararse. **Las partidas no tienen límite de rondas:** solo acaban con «Terminar partida».
