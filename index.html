@@ -145,6 +145,20 @@ button{font-family:inherit; cursor:pointer; border:none}
 #final{display:none; flex:1; flex-direction:column; justify-content:center; text-align:center; gap:18px}
 .podio{display:flex; flex-direction:column; gap:10px; max-width:640px; margin:0 auto; width:100%}
 .pod{display:flex; align-items:center; justify-content:space-between; gap:12px; border-radius:16px; padding:.7em 1.1em; color:#10203f; font-size:clamp(1.1rem,3vw,1.8rem); font-weight:800}
+
+/* ---------- Combinadas: los corchetes y el paso a paso ---------- */
+.cor{font-weight:800}
+.grande sup, .pasos sup{font-size:.6em; line-height:0}
+/* en fila, como en la pizarra («2 · 2 − 6 = 4 − 6 = −2»): uno debajo de otro empujaba «Siguiente pregunta»
+   fuera de un proyector de 1366 × 768 */
+.pasos{display:flex; flex-wrap:wrap; justify-content:center; align-items:baseline; gap:.1em .7em; font-size:clamp(1rem,2vw,1.45rem); line-height:1.35; font-variant-numeric:tabular-nums}
+.pasos-t{margin:0; font-size:.62em; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft)}
+.pasos ol{display:contents; list-style:none; margin:0; padding:0}
+.pasos li{white-space:nowrap}
+.pasos.muchos{font-size:clamp(.95rem,1.7vw,1.2rem)}
+.pasos li::before{content:"= "; color:var(--ink-soft)}
+.pasos li:first-child::before{content:""}
+.pasos li:last-child{font-weight:800; color:var(--num)}
 </style>
 </head>
 <body>
@@ -224,6 +238,335 @@ button{font-family:inherit; cursor:pointer; border:none}
 
 </div>
 
+<script id="motor-combinadas">
+/* ---------- motor de las operaciones combinadas (11-nov-2026) ----------
+   Las cuentas son las de las fichas de combinadas de la unidad (generar-ficha-combinadas.py: pos1-pos4 con
+   positivos y ent1-ent4 con positivos y negativos), en la misma notación corta: «40 − [3 × (2 + 4) − 6] : 4»,
+   «r(25)» para la raíz y «(−2)^3» para la potencia. Se comprueban igual: divisiones exactas, raíces de
+   cuadrados perfectos y, con positivos, ninguna resta negativa a mitad de camino.
+   De la cuenta salen el paso a paso (una operación por línea, primero lo de más dentro) y las opciones falsas,
+   que son la misma cuenta hecha con un error de los de verdad. No toca la página: se prueba en Node con
+   pruebas/test-combinadas.js. */
+var Combinadas = (function(){
+"use strict";
+var MENOS = "−";
+var NO = { noVale: true };
+
+/* ---------- las cuentas de las fichas ---------- */
+function N(n){ return n < 0 ? MENOS + (-n) : String(n); }
+function P(n){ return n < 0 ? "(" + MENOS + (-n) + ")" : String(n); }
+function fabricas(rnd){
+  function ri(a, b){ return a + Math.floor(rnd() * (b - a + 1)); }
+  function elige(arr){ return arr[Math.floor(rnd() * arr.length)]; }
+  function s(){ return rnd() < 0.5 ? -1 : 1; }
+  var ab = Math.abs;
+  return {
+    pos: [null,
+      function(){ var a = ri(2,9), b = ri(2,9), c = ri(2,9), d = ri(2,30);
+        return ([d + " + " + a + " × " + b, a + " × " + b + " − " + ri(1,15),
+          (a*b) + " : " + a + " + " + c + " × " + ri(2,6), (a*b + d) + " − " + a + " × " + b + " + " + c,
+          a + " × " + b + " + " + (c*d) + " : " + c]); },
+      function(){ var a = ri(2,12), b = ri(2,9), c = ri(2,6), d = ri(1,20);
+        return (["(" + a + " + " + b + ") × " + c + " − " + d, c + " × (" + (a+b) + " − " + b + ") + " + d,
+          "(" + (a*c) + " + " + (b*c) + ") : " + c, (a+20) + " − (" + (b*c) + " + " + c + ") : " + c,
+          d + " + (" + (a+b) + " − " + a + ") × " + c]); },
+      function(){ var a = ri(2,9), b = ri(2,9), c = ri(2,9), d = ri(2,9), e = ri(2,9);
+        return ([a + " × [" + b + " + (" + (c+d) + " − " + d + ")]",
+          "[(" + a + " + " + b + ") × " + c + " − " + d + "] : " + e,
+          a + " + 2 × [(" + (b+c) + " − " + c + ") + (" + d + " + " + e + ")]",
+          "[" + (a+b+c) + " − (" + (b+c) + " − " + c + ")] × " + d + " − " + e,
+          (50+a) + " − [" + b + " + (" + (c+d) + " − " + c + ") × " + e + "]",
+          "[(" + a + " × " + b + ") − (" + c + " + " + d + ")] : " + e]); },
+      function(){ var a = ri(2,6), b = ri(2,6), c = ri(2,9), q = elige([4,9,16,25,36,49,64,81,100]);
+        return (["[(" + a + " + " + b + ")^2 − " + c + "] : " + ri(2,5),
+          "r(" + q + ") × [" + (a+b+c) + " − (" + (b+c) + " − " + c + ")]",
+          "2^3 + [(" + (a+b) + " − " + b + ") × " + c + "]",
+          "[r(" + q + ") + (" + a + " × " + b + ")] − " + ri(2,4) + "^2",
+          ri(6,12) + "^2 − [r(" + q + ") + " + a + " × (" + (b+c) + " − " + c + ")]",
+          "[" + a + "^2 + r(" + q + ")] : (" + (b+c) + " − " + b + ")"]); }],
+    ent: [null,
+      function(){ var a = s()*ri(2,9), b = s()*ri(2,9), c = s()*ri(2,12);
+        return ([N(c) + " + " + P(a) + " · " + P(b), P(a) + " · " + P(b) + " − " + ab(c),
+          P(a*b) + " : " + P(a) + " + " + P(c), N(c) + " − " + P(a) + " · " + P(b),
+          P(a) + " · " + P(c) + " + " + P(a*b) + " : " + P(b)]); },
+      function(){ var a = s()*ri(2,9), b = s()*ri(2,9), c = s()*ri(2,6), d = ri(1,12);
+        return (["(" + N(a) + " + " + P(b) + ") · " + P(c), P(c) + " · (" + N(a) + " − " + d + ")",
+          "(" + N(a*c) + " − " + ab(b*c) + ") : " + P(c), N(d) + " − (" + N(a) + " + " + P(b) + ") · " + P(c),
+          P(a) + " · (" + N(b) + " + " + P(c) + ") − " + d]); },
+      function(){ var a = s()*ri(2,9), b = s()*ri(2,9), c = s()*ri(2,9), d = s()*ri(2,9), e = s()*ri(2,9);
+        return ([P(a) + " · [" + N(b) + " − (" + N(c) + " + " + P(d) + ")]",
+          "[(" + N(a) + " − " + P(b) + ") · " + P(c) + " + " + P(d) + "] : " + P(e),
+          N(a) + " − [" + N(b) + " − (" + N(c) + " − " + P(d) + ")]",
+          MENOS + "[" + N(a) + " + (" + N(b) + " − " + P(c) + ")] · " + P(d),
+          "[" + P(a) + " · (" + N(b) + " + " + P(c) + ")] − [" + N(d) + " − " + P(e) + "]",
+          N(a) + " + " + P(b) + " · [(" + N(c) + " − " + P(d) + ") + " + P(e) + "]"]); },
+      function(){ var a = s()*ri(2,6), b = s()*ri(2,6), c = s()*ri(2,6), d = s()*ri(2,6), q = elige([4,9,16,25,36,49]);
+        return (["(" + MENOS + "2)^3 + [" + P(a) + " · (" + N(b) + " − " + P(c) + ")]",
+          "[(" + N(a) + " + " + P(b) + ")^2 − " + ab(c) + "] : " + P(d),
+          "r(" + q + ") · [" + N(a) + " − (" + N(b) + " + " + P(c) + ")]",
+          P(a) + "^2 − " + P(b) + " · [" + N(c) + " − " + P(d) + "]",
+          N(a) + " − [r(" + q + ") − " + P(b) + "^2]",
+          "[" + P(a) + " · " + P(b) + "^2 + r(" + q + ")] : " + P(d)]); }]
+  };
+}
+var TOPE = { pos: [0, 150, 200, 200, 200], ent: [0, 80, 100, 120, 150] };
+
+/* ---------- leer la notación ---------- */
+function trozos(t){
+  var out = [], i = 0;
+  while(i < t.length){
+    var ch = t[i];
+    if(ch === " "){ i++; continue; }
+    if(ch >= "0" && ch <= "9"){ var j = i; while(j < t.length && t[j] >= "0" && t[j] <= "9") j++;
+      out.push({t:"num", v:parseInt(t.slice(i, j), 10)}); i = j; continue; }
+    if(ch === "r" && t[i+1] === "("){ out.push({t:"raiz"}); i += 2; continue; }
+    if(ch === "-"){ out.push({t:"op", v:MENOS}); i++; continue; }
+    if("+−×·:^".indexOf(ch) >= 0){ out.push({t:"op", v:ch}); i++; continue; }
+    if(ch === "(" || ch === "["){ out.push({t:"abre", v:ch}); i++; continue; }
+    if(ch === ")" || ch === "]"){ out.push({t:"cierra", v:ch}); i++; continue; }
+    throw NO;
+  }
+  return out;
+}
+/* el orden de siempre, y los dos al revés que salen en la pizarra */
+var ORDEN = {"+":1, "−":1, "×":2, "·":2, ":":2};
+var ORDEN_IZQ = {"+":1, "−":1, "×":1, "·":1, ":":1};
+var ORDEN_SUMA = {"+":2, "−":2, "×":1, "·":1, ":":1};
+function arbol(tk, orden, derecha){
+  var i = 0;
+  function mira(){ return tk[i]; }
+  function cierra(c){ var x = tk[i++]; if(!x || x.t !== "cierra" || x.v !== c) throw NO; }
+  function expr(min){
+    var izq = unario();
+    for(;;){
+      var x = mira();
+      if(!x || x.t !== "op" || x.v === "^" || orden[x.v] < min) break;
+      i++;
+      izq = {k:"bin", op:x.v, a:izq, b:expr(orden[x.v] + (derecha ? 0 : 1))};
+    }
+    return izq;
+  }
+  function unario(){
+    var x = mira();
+    if(x && x.t === "op" && x.v === MENOS){
+      i++;
+      var y = unario();
+      if(y.k === "num" && !y.par && y.v > 0) return {k:"num", v:-y.v, par:false};
+      return {k:"neg", x:y};
+    }
+    return potencia();
+  }
+  function potencia(){
+    var b = primario(), x = mira();
+    if(x && x.t === "op" && x.v === "^"){ i++; var e = tk[i++]; if(!e || e.t !== "num") throw NO; return {k:"pot", a:b, e:e.v}; }
+    return b;
+  }
+  function primario(){
+    var x = tk[i++], y;
+    if(!x) throw NO;
+    if(x.t === "num") return {k:"num", v:x.v, par:false};
+    if(x.t === "raiz"){ y = expr(1); cierra(")"); return {k:"raiz", x:y}; }
+    if(x.t === "abre"){
+      y = expr(1); cierra(x.v === "(" ? ")" : "]");
+      if(y.k === "num" && y.v < 0) return {k:"num", v:y.v, par:true};   /* (−5): el paréntesis del signo */
+      return {k:"grupo", c:x.v, x:y};
+    }
+    throw NO;
+  }
+  var r = expr(1);
+  if(i !== tk.length) throw NO;
+  return r;
+}
+/* «saltarse el paréntesis»: fuera los paréntesis y los corchetes, menos los del signo (−5) y los de la raíz */
+function sinParentesis(tk){
+  var pila = [], quitar = {};
+  tk.forEach(function(x, i){
+    if(x.t === "abre" || x.t === "raiz") pila.push(i);
+    else if(x.t === "cierra"){
+      var a = pila.pop();
+      if(a === undefined) throw NO;
+      var signo = (i - a === 3 && tk[a+1].t === "op" && tk[a+1].v === MENOS && tk[a+2].t === "num");
+      if(tk[a].t === "abre" && !signo){ quitar[a] = true; quitar[i] = true; }
+    }
+  });
+  return tk.filter(function(x, i){ return !quitar[i]; });
+}
+
+/* ---------- calcular, bien o con un error de los de verdad ---------- */
+function opera(op, a, b, modo, positivos){
+  var r;
+  if(op === "+"){
+    if(modo === "sumaSigno" && a * b < 0) return (a < 0 ? -1 : 1) * (Math.abs(a) + Math.abs(b));
+    r = a + b;
+  } else if(op === MENOS){
+    if(modo === "restaNeg" && b < 0) return a + b;
+    if(modo === "restaSigno" && a < 0 && b > 0) return a + b;
+    r = a - b;
+    if(positivos && r < 0) throw NO;
+  } else if(op === "×" || op === "·"){
+    if(modo === "signoMul" && a < 0 && b < 0) return -(a * b);
+    r = a * b;
+  } else if(op === ":"){
+    if(b === 0 || a % b !== 0) throw NO;
+    if(modo === "signoMul" && a < 0 && b < 0) return -(a / b);
+    r = a / b;
+  } else throw NO;
+  if(Math.abs(r) > 1e6) throw NO;
+  return r;
+}
+function calcula(n, modo, positivos){
+  var v;
+  switch(n.k){
+    case "num": return n.v;
+    case "grupo": return calcula(n.x, modo, positivos);
+    case "neg": return -calcula(n.x, modo, positivos);
+    case "raiz": v = calcula(n.x, modo, positivos);
+      if(modo === "raizMitad"){ if(v % 2) throw NO; return v / 2; }
+      var r = Math.round(Math.sqrt(Math.max(v, 0)));
+      if(v < 0 || r * r !== v) throw NO; return r;
+    case "pot": v = calcula(n.a, modo, positivos);
+      if(modo === "potPorExp") return v * n.e;
+      var p = Math.pow(v, n.e);
+      return (modo === "potSigno" && v < 0) ? -p : p;
+    case "bin": return opera(n.op, calcula(n.a, modo, positivos), calcula(n.b, modo, positivos), modo, positivos);
+  }
+  throw NO;
+}
+function prueba(f){ try { var v = f(); return (typeof v === "number" && isFinite(v)) ? v : null; } catch(e){ if(e === NO) return null; throw e; } }
+function valor(t, positivos){ return prueba(function(){ return calcula(arbol(trozos(t), ORDEN), null, !!positivos); }); }
+function errores(t){
+  var tk = trozos(t), bien = arbol(tk, ORDEN), r = {};
+  r.izq = prueba(function(){ return calcula(arbol(tk, ORDEN_IZQ), null, false); });
+  r.sumaPrimero = prueba(function(){ return calcula(arbol(tk, ORDEN_SUMA), null, false); });
+  /* 40 − 12 + 3 como 40 − 15, y 24 : 4 × 2 como 24 : 8: las del mismo rango, de derecha a izquierda */
+  r.derecha = prueba(function(){ return calcula(arbol(tk, ORDEN, true), null, false); });
+  r.sinParentesis = prueba(function(){ return calcula(arbol(sinParentesis(tk), ORDEN), null, false); });
+  ["potPorExp", "potSigno", "raizMitad", "signoMul", "restaNeg", "sumaSigno", "restaSigno"].forEach(function(m){
+    r[m] = prueba(function(){ return calcula(bien, m, false); });
+  });
+  var v = prueba(function(){ return calcula(bien, null, false); });
+  r.opuesto = (v === null || v === 0) ? null : -v;
+  return r;
+}
+
+/* ---------- el paso a paso: una operación por línea ---------- */
+function escribe(n, primero){
+  switch(n.k){
+    case "num": return n.v < 0 ? ((n.par || !primero) ? "(" + MENOS + (-n.v) + ")" : MENOS + (-n.v)) : String(n.v);
+    case "grupo": return n.c + escribe(n.x, true) + (n.c === "(" ? ")" : "]");
+    case "neg": return MENOS + escribe(n.x, false);
+    case "raiz": return "r(" + escribe(n.x, true) + ")";
+    case "pot": return (n.a.k === "num" && n.a.v < 0 ? "(" + MENOS + (-n.a.v) + ")" : escribe(n.a, false)) + "^" + n.e;
+    case "bin": return escribe(n.a, primero) + " " + n.op + " " + escribe(n.b, false);
+  }
+  throw NO;
+}
+/* un paréntesis que ya es un número se va (si es negativo, se queda como el del signo) */
+function limpia(n){
+  switch(n.k){
+    case "grupo": var x = limpia(n.x);
+      return x.k === "num" ? {k:"num", v:x.v, par:x.v < 0} : {k:"grupo", c:n.c, x:x};
+    case "neg": var y = limpia(n.x);
+      return (y.k === "num" && y.v > 0) ? {k:"num", v:-y.v, par:false} : {k:"neg", x:y};
+    case "raiz": return {k:"raiz", x:limpia(n.x)};
+    case "pot": return {k:"pot", a:limpia(n.a), e:n.e};
+    case "bin": return {k:"bin", op:n.op, a:limpia(n.a), b:limpia(n.b)};
+  }
+  return n;
+}
+/* la siguiente operación: la de más dentro; a igual hondura, potencias y raíces, luego × y :, luego + y −;
+   y a igualdad, la de más a la izquierda */
+function siguienteOp(raiz){
+  var mejor = null, orden = 0;
+  (function ve(n, hondo){
+    var listo = false, peso = 0;
+    if(n.k === "bin"){ ve(n.a, hondo); listo = n.a.k === "num" && n.b.k === "num"; peso = ORDEN[n.op];
+      if(listo) mira(n, hondo, peso); ve(n.b, hondo); return; }
+    if(n.k === "grupo"){ ve(n.x, hondo + 1); return; }
+    if(n.k === "raiz"){ if(n.x.k === "num") mira(n, hondo, 3); else ve(n.x, hondo + 1); return; }
+    if(n.k === "pot"){ if(n.a.k === "num") mira(n, hondo, 3); else ve(n.a, hondo); return; }
+    if(n.k === "neg"){ if(n.x.k === "num") mira(n, hondo, 3); else ve(n.x, hondo); return; }
+  })(raiz, 0);
+  function mira(n, hondo, peso){
+    orden++;
+    if(!mejor || hondo > mejor.hondo || (hondo === mejor.hondo && peso > mejor.peso)) mejor = {n:n, hondo:hondo, peso:peso};
+  }
+  return mejor && mejor.n;
+}
+function cambia(n, cual, por){
+  if(n === cual) return por;
+  switch(n.k){
+    case "grupo": return {k:"grupo", c:n.c, x:cambia(n.x, cual, por)};
+    case "neg": return {k:"neg", x:cambia(n.x, cual, por)};
+    case "raiz": return {k:"raiz", x:cambia(n.x, cual, por)};
+    case "pot": return {k:"pot", a:cambia(n.a, cual, por), e:n.e};
+    case "bin": return {k:"bin", op:n.op, a:cambia(n.a, cual, por), b:cambia(n.b, cual, por)};
+  }
+  return n;
+}
+function pasos(t){
+  var a = limpia(arbol(trozos(t), ORDEN)), out = [escribe(a, true)];
+  for(var k = 0; k < 40 && a.k !== "num"; k++){
+    var op = siguienteOp(a);
+    if(!op) throw NO;
+    a = limpia(cambia(a, op, {k:"num", v:calcula(op, null, false), par:false}));
+    out.push(escribe(a, true));
+  }
+  return out;
+}
+
+/* ---------- a la pantalla ---------- */
+function html(t){
+  return t.replace(/r\((\d+)\)/g, "√$1").replace(/\^(\d+)/g, "<sup>$1</sup>")
+    .replace(/\[/g, '<b class="cor">[</b>').replace(/\]/g, '<b class="cor">]</b>');
+}
+function pasosHtml(lista){
+  return '<div class="pasos' + (lista.length > 5 ? ' muchos' : '') + '"><p class="pasos-t">Paso a paso</p><ol>' +
+    lista.map(function(p){ return "<li>" + html(p) + "</li>"; }).join("") + "</ol></div>";
+}
+
+/* ---------- las opciones falsas: errores de verdad y, si faltan, números cerca ---------- */
+var ERRORES_POS = ["izq", "sinParentesis", "sumaPrimero", "derecha", "potPorExp", "raizMitad"];
+var ERRORES_ENT = ["izq", "signoMul", "restaNeg", "sinParentesis", "sumaSigno", "potSigno", "restaSigno", "opuesto",
+                   "potPorExp", "raizMitad", "derecha", "sumaPrimero"];
+function falsas(t, v, positivos, rnd){
+  var e = errores(t), lista = [];
+  function vale(x){ return x !== null && x !== undefined && x !== v && lista.indexOf(x) < 0 && !(positivos && x < 0) && Math.abs(x) <= 10000; }
+  (positivos ? ERRORES_POS : ERRORES_ENT).forEach(function(m){ if(lista.length < 3 && vale(e[m])) lista.push(e[m]); });
+  var reales = lista.length, cerca = [1, -1, 2, -2, 10, -10, 3, -3, 4, -4, 5, -5];
+  for(var i = cerca.length - 1; i > 0; i--){ var j = Math.floor(rnd() * (i + 1)), x = cerca[i]; cerca[i] = cerca[j]; cerca[j] = x; }
+  cerca.forEach(function(k){ if(lista.length < 3 && vale(v + k)) lista.push(v + k); });
+  return {lista:lista, reales:reales};
+}
+
+/* una cuenta del nivel, válida, con su paso a paso y tres opciones falsas. Primero se elige la plantilla, todas
+   con la misma probabilidad, como en la ficha; después, entre unos cuantos números que valgan para ella, los que
+   den más errores de verdad (hay plantillas que solo admiten uno: «d + a × b» no tiene más fallo que ir de
+   izquierda a derecha) */
+function generar(nivel, positivos, rnd){
+  rnd = rnd || Math.random;
+  var hace = fabricas(rnd)[positivos ? "pos" : "ent"][nivel], tope = TOPE[positivos ? "pos" : "ent"][nivel], primera = null;
+  var cual = Math.floor(rnd() * hace().length);
+  for(var k = 0, validas = 0; k < 3000 && validas < 12; k++){
+    var t = hace()[cual], v = valor(t, positivos);
+    if(v === null || Math.abs(v) > tope || (positivos && v < 0)) continue;
+    validas++;
+    var f = falsas(t, v, positivos, rnd);
+    var q = {cuenta:t, valor:v, distractores:f.lista, errores:f.reales};
+    if(!primera || q.errores > primera.errores) primera = q;
+    if(q.errores >= 2) break;
+  }
+  if(!primera) return null;
+  primera.pasos = pasos(primera.cuenta);
+  primera.html = html(primera.cuenta);
+  primera.solucion = pasosHtml(primera.pasos);
+  return primera;
+}
+
+return { generar:generar, valor:valor, pasos:pasos, errores:errores, html:html, pasosHtml:pasosHtml };
+})();
+</script>
+
 <script>
 (function(){
 "use strict";
@@ -260,6 +603,19 @@ const NIVELES = [
   {cif:[8,9], nombre:"Millones grandes", hasta:"hasta 999.999.999"}
 ];
 const NIVEL_MAX = 6;
+
+/* Las combinadas no suben por el tamaño del número sino por la forma de la cuenta: sus niveles son los cuatro de
+   las fichas de combinadas de la unidad. */
+const NIVELES_COMB = [
+  null,
+  {nombre:"Sin paréntesis",          nota:"primero multiplicaciones y divisiones; después, sumas y restas."},
+  {nombre:"Con un paréntesis",       nota:"primero lo de dentro del paréntesis."},
+  {nombre:"Paréntesis y corchetes",  nota:"de dentro afuera: los paréntesis y después los corchetes."},
+  {nombre:"Potencias y raíces",      nota:"corchetes, potencias y raíces."}
+];
+const esComb = m => m==="comb-pos" || m==="comb-ent";
+function niveles(){ return esComb(estado.modo) ? NIVELES_COMB : NIVELES; }
+function nivelMax(){ return niveles().length - 1; }
 
 /* nivel del equipo al que le toca; antes de empezar, el de la portada */
 function nv(){
@@ -937,13 +1293,30 @@ function pzNuevo(){
 }
 function pzAlternar(id){ $(id).hidden = !$(id).hidden; }
 
-const BANCOS = {"leer-pos":LEER_POS, "leer-neg":LEER_NEG, "descomp":DESCOMP, "redondear":REDONDEO, "naturales":NATURALES, "enteros":ENTEROS};
+/* ---------- operaciones combinadas (11-nov-2026) ----------
+   Las cuentas, el paso a paso y las opciones falsas los hace el motor de arriba (<script id="motor-combinadas">).
+   El recordatorio de abajo es el orden, no la respuesta: el paso a paso sale al cerrar la pregunta. */
+const ORDEN_COMB = [null,
+  "Primero, multiplicaciones y divisiones; después, sumas y restas. Cada paso, de izquierda a derecha.",
+  "Primero, lo de dentro del paréntesis; luego, multiplicaciones y divisiones; y al final, sumas y restas.",
+  "De dentro afuera: paréntesis, corchetes; luego, multiplicaciones y divisiones; y al final, sumas y restas.",
+  "De dentro afuera: paréntesis y corchetes; después, potencias y raíces; luego, multiplicaciones y divisiones; y al final, sumas y restas."];
+function pregComb(nivel, positivos){
+  const c = Combinadas.generar(nivel, positivos);
+  return pregNum("", c.valor, c.distractores,
+    {grande:c.html, grandeTexto:true, leyenda:ORDEN_COMB[nivel], solucion:c.solucion});
+}
+const COMB_POS = [{min:1, max:4, f:n=>pregComb(n, true)}];
+const COMB_ENT = [{min:1, max:4, f:n=>pregComb(n, false)}];
+
+const BANCOS = {"leer-pos":LEER_POS, "leer-neg":LEER_NEG, "descomp":DESCOMP, "redondear":REDONDEO, "naturales":NATURALES, "enteros":ENTEROS,
+                "comb-pos":COMB_POS, "comb-ent":COMB_ENT};
 function generar(){
   const nivel = nv();
   const todo = estado.modo==="mixto" ? [].concat(LEER_POS,LEER_NEG,DESCOMP,REDONDEO,NATURALES,ENTEROS) : BANCOS[estado.modo];
   /* sólo los generadores que tienen sentido a este nivel; si al subir se
      quedara sin ninguno, se tira del banco entero antes que romperse */
-  let aptos = todo.filter(g => nivel >= (g.min||1) && nivel <= (g.max||NIVEL_MAX));
+  let aptos = todo.filter(g => nivel >= (g.min||1) && nivel <= (g.max||nivelMax()));
   if(!aptos.length) aptos = todo.filter(g => nivel >= (g.min||1));
   if(!aptos.length) aptos = todo;
   const q = elegir(aptos).f(nivel);
@@ -977,7 +1350,7 @@ function pintarMarcador(){
   $("marcador").innerHTML = estado.equipos.map((e,i)=>
     '<div class="eq'+(i===estado.turno?' activo':'')+'" style="background:'+e.color+'">'+
     '<div class="eq-fila"><b>'+e.nombre+'</b><i>'+e.puntos+'</i></div>'+
-    '<small>Nivel '+e.nivel+' · '+NIVELES[e.nivel].nombre+'</small></div>'
+    '<small>Nivel '+e.nivel+' · '+niveles()[e.nivel].nombre+'</small></div>'
   ).join("");
   const e = estado.equipos[estado.turno];
   $("turno").innerHTML = (estado.enRebote? "Rebote: responde " : "Es el turno de ") +
@@ -991,7 +1364,7 @@ function ajustarNivel(equipo, acierto){
   if(!estado.adapta) return 0;
   if(acierto){
     equipo.racha++;
-    if(equipo.racha>=2 && equipo.nivel<NIVEL_MAX){ equipo.nivel++; equipo.racha=0; return 1; }
+    if(equipo.racha>=2 && equipo.nivel<nivelMax()){ equipo.nivel++; equipo.racha=0; return 1; }
   } else {
     equipo.racha = 0;
     if(equipo.nivel>1){ equipo.nivel--; return -1; }
@@ -1003,11 +1376,11 @@ function ajustarNivel(equipo, acierto){
    que el marcador no ve */
 function moverNivel(d){
   const e = estado.equipos[estado.turno];
-  const nuevo = Math.min(NIVEL_MAX, Math.max(1, e.nivel+d));
+  const nuevo = Math.min(nivelMax(), Math.max(1, e.nivel+d));
   if(nuevo===e.nivel) return;
   /* en modo fijo el nivel es de la clase entera, no de un equipo */
   const mueve = estado.adapta ? [e] : estado.equipos;
-  mueve.forEach(x=>{ x.nivel = Math.min(NIVEL_MAX, Math.max(1, x.nivel+d)); x.racha = 0; });
+  mueve.forEach(x=>{ x.nivel = Math.min(nivelMax(), Math.max(1, x.nivel+d)); x.racha = 0; });
   if(!estado.adapta) estado.nivel = e.nivel;
   if(!estado.respondida && !estado.enRebote){
     estado.pregunta = generar();
@@ -1111,6 +1484,12 @@ function cerrar(mensaje){
     else if(!b.classList.contains("mal")) b.classList.add("gris");
   });
   if(q.visual){ estado.pistaVisible = true; $("visual").innerHTML = q.visual; }
+  /* las combinadas: el paso a paso, para corregirla con toda la clase */
+  if(q.solucion){
+    $("visual").innerHTML = q.solucion;
+    const ley = document.querySelector("#enunciado .leyenda");   /* el paso a paso ocupa el sitio del recordatorio */
+    if(ley) ley.remove();
+  }
   const leer = q.decir || q.audio;
   $("barra").innerHTML = mensaje + (leer ? '<button class="btn" id="btnOir">🔊 Escuchar la respuesta</button>' : '') +
     '<button class="btn principal" id="btnSig">Siguiente pregunta</button><button class="btn" id="btnFin">Terminar partida</button>';
@@ -1137,7 +1516,7 @@ function terminar(){
   const orden = estado.equipos.slice().sort((a,b)=>b.puntos-a.puntos);
   $("podio").innerHTML = orden.map((e,i)=>
     '<div class="pod" style="background:'+e.color+'">'+
-    '<span>'+(i===0?"🏆 ":"")+e.nombre+'<small>Acabó en el nivel '+e.nivel+' · '+NIVELES[e.nivel].nombre+'</small></span>'+
+    '<span>'+(i===0?"🏆 ":"")+e.nombre+'<small>Acabó en el nivel '+e.nivel+' · '+niveles()[e.nivel].nombre+'</small></span>'+
     '<span>'+e.puntos+' puntos</span></div>'
   ).join("");
 }
@@ -1150,20 +1529,24 @@ function pintarPortada(){
   Array.prototype.forEach.call($("selEquipos").children, b=>{
     b.addEventListener("click", ()=>{ estado.nEquipos = Number(b.dataset.n); pintarPortada(); });
   });
-  const modos = [["leer-pos","Leer y escribir positivos"],["leer-neg","Leer y escribir negativos"],["descomp","Descomposición"],["redondear","Redondear"],["naturales","Operar con naturales"],["enteros","Operar con enteros"],["mixto","Mezcla de todo"]];
+  const modos = [["leer-pos","Leer y escribir positivos"],["leer-neg","Leer y escribir negativos"],["descomp","Descomposición"],["redondear","Redondear"],["naturales","Operar con naturales"],["enteros","Operar con enteros"],["comb-pos","Combinadas con positivos"],["comb-ent","Combinadas con positivos y negativos"],["mixto","Mezcla de todo"]];
   $("selModo").innerHTML = modos.map(m=>
     '<button class="chip" data-m="'+m[0]+'" aria-pressed="'+(m[0]===estado.modo)+'">'+m[1]+'</button>'
   ).join("");
   Array.prototype.forEach.call($("selModo").children, b=>{
-    b.addEventListener("click", ()=>{ estado.modo = b.dataset.m; pintarPortada(); });
+    b.addEventListener("click", ()=>{ estado.modo = b.dataset.m; estado.nivel = Math.min(estado.nivel, nivelMax()); pintarPortada(); });
   });
-  $("selNivel").innerHTML = NIVELES.slice(1).map((nv_,i)=>
+  $("selNivel").innerHTML = niveles().slice(1).map((nv_,i)=>
     '<button class="chip" data-n="'+(i+1)+'" aria-pressed="'+((i+1)===estado.nivel)+'">'+(i+1)+'. '+nv_.nombre+'</button>'
   ).join("");
   Array.prototype.forEach.call($("selNivel").children, b=>{
     b.addEventListener("click", ()=>{ estado.nivel = Number(b.dataset.n); pintarPortada(); });
   });
-  $("notaNivel").textContent = NIVELES[estado.nivel].nombre + ", " + NIVELES[estado.nivel].hasta +
+  $("notaNivel").textContent = esComb(estado.modo)
+    ? NIVELES_COMB[estado.nivel].nombre + ": " + NIVELES_COMB[estado.nivel].nota +
+      " Son las cuentas de las fichas de combinadas" + (estado.modo==="comb-ent" ? ", con positivos y negativos." : ", con positivos y sin restas que se queden en negativo.") +
+      " Al contestar sale el paso a paso."
+    : NIVELES[estado.nivel].nombre + ", " + NIVELES[estado.nivel].hasta +
     ". Del nivel 3 en adelante entran también la jerarquía de operaciones, los paréntesis y las potencias.";
 
   const adapta = [[true,"Sube y baja solo"],[false,"Fijo para todos"]];
